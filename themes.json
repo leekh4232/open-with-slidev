@@ -1,0 +1,226 @@
+[
+  {
+    "id": "default",
+    "pkg": "@slidev/theme-default",
+    "name": "Default",
+    "description": "Slidev 기본 테마. 미니멀, 라이트/다크",
+    "source": "official"
+  },
+  {
+    "id": "seriph",
+    "pkg": "@slidev/theme-seriph",
+    "name": "Seriph",
+    "description": "세리프 글꼴의 격식 있는 테마",
+    "source": "official"
+  },
+  {
+    "id": "apple-basic",
+    "pkg": "@slidev/theme-apple-basic",
+    "name": "Apple Basic",
+    "description": "Apple Keynote 의 Basic Black/White 느낌",
+    "source": "official"
+  },
+  {
+    "id": "bricks",
+    "pkg": "@slidev/theme-bricks",
+    "name": "Bricks",
+    "description": "벽돌 느낌의 블록 레이아웃",
+    "source": "official"
+  },
+  {
+    "id": "shibainu",
+    "pkg": "@slidev/theme-shibainu",
+    "name": "Shibainu",
+    "description": "시바견 일러스트의 귀여운 테마",
+    "source": "official"
+  },
+  {
+    "id": "geist",
+    "pkg": "slidev-theme-geist",
+    "name": "Vercel (Geist)",
+    "description": "Vercel 디자인 시스템 기반, 검정·흰색",
+    "source": "community"
+  },
+  {
+    "id": "light-icons",
+    "pkg": "slidev-theme-light-icons",
+    "name": "Light Icons",
+    "description": "밝고 단정한 테마, 창의적인 레이아웃과 아이콘",
+    "source": "community"
+  },
+  {
+    "id": "eloc",
+    "pkg": "slidev-theme-eloc",
+    "name": "Eloc",
+    "description": "글쓰기에 집중한 간결한 발표 스타일",
+    "source": "community"
+  },
+  {
+    "id": "purplin",
+    "pkg": "slidev-theme-purplin",
+    "name": "Purplin",
+    "description": "보라색 기반, 하단 바 컴포넌트",
+    "source": "community"
+  },
+  {
+    "id": "unicorn",
+    "pkg": "slidev-theme-unicorn",
+    "name": "Unicorn",
+    "description": "Dawntraoz 웹사이트 디자인 기반",
+    "source": "community"
+  },
+  {
+    "id": "zhozhoba",
+    "pkg": "slidev-theme-zhozhoba",
+    "name": "Zhozhoba",
+    "description": "Zhozhoba 스타일 테마",
+    "source": "community"
+  },
+  {
+    "id": "penguin",
+    "pkg": "slidev-theme-penguin",
+    "name": "Penguin",
+    "description": "펭귄 테마, 라이트/다크",
+    "source": "community"
+  },
+  {
+    "id": "vuetiful",
+    "pkg": "slidev-theme-vuetiful",
+    "name": "Vuetiful",
+    "description": "Vue 색감의 테마",
+    "source": "community"
+  },
+  {
+    "id": "takahashi",
+    "pkg": "slidev-theme-takahashi",
+    "name": "Takahashi",
+    "description": "큰 글자 몇 개로만 말하는 타카하시 기법",
+    "source": "community"
+  },
+  {
+    "id": "academic",
+    "pkg": "slidev-theme-academic",
+    "name": "Academic",
+    "description": "학술 발표용, 간단한 구성",
+    "source": "community"
+  },
+  {
+    "id": "mokkapps",
+    "pkg": "slidev-theme-mokkapps",
+    "name": "Mokkapps",
+    "description": "Mokkapps 브랜드 테마",
+    "source": "community"
+  },
+  {
+    "id": "the-unnamed",
+    "pkg": "slidev-theme-the-unnamed",
+    "name": "The unnamed",
+    "description": "VS Code 'The unnamed' 테마 색감",
+    "source": "community"
+  },
+  {
+    "id": "dracula",
+    "pkg": "slidev-theme-dracula",
+    "name": "Dracula",
+    "description": "Dracula 다크 색상 테마",
+    "source": "community"
+  },
+  {
+    "id": "frankfurt",
+    "pkg": "slidev-theme-frankfurt",
+    "name": "Frankfurt",
+    "description": "LaTeX Beamer Frankfurt 스타일",
+    "source": "community"
+  },
+  {
+    "id": "hep",
+    "pkg": "slidev-theme-hep",
+    "name": "HEP",
+    "description": "고에너지물리 학술 발표 스타일",
+    "source": "community"
+  },
+  {
+    "id": "excali-slide",
+    "pkg": "slidev-theme-excali-slide",
+    "name": "Excali-slide",
+    "description": "Excalidraw 손그림 느낌, 형광펜 강조 애니메이션",
+    "source": "community"
+  },
+  {
+    "id": "mint",
+    "pkg": "slidev-theme-mint",
+    "name": "Mint",
+    "description": "민트색 테마",
+    "source": "community"
+  },
+  {
+    "id": "neversink",
+    "pkg": "slidev-theme-neversink",
+    "name": "Neversink",
+    "description": "아이콘·QR·다양한 레이아웃이 풍부한 테마",
+    "source": "community"
+  },
+  {
+    "id": "nord",
+    "pkg": "slidev-theme-nord",
+    "name": "Nord",
+    "description": "Nord 색상 팔레트",
+    "source": "community"
+  },
+  {
+    "id": "scholarly",
+    "pkg": "slidev-theme-scholarly",
+    "name": "Scholarly",
+    "description": "Nord 기반 학술 테마, 인용·참고문헌 지원",
+    "source": "community"
+  },
+  {
+    "id": "field-manual",
+    "pkg": "slidev-theme-field-manual",
+    "name": "Field Manual",
+    "description": "빈티지 군용 매뉴얼 스타일, 레이아웃 24개",
+    "source": "community"
+  },
+  {
+    "id": "touying",
+    "pkg": "slidev-theme-touying",
+    "name": "Touying",
+    "description": "Typst Touying 디자인 기반",
+    "source": "community"
+  },
+  {
+    "id": "tahta",
+    "pkg": "slidev-theme-tahta",
+    "name": "Tahta",
+    "description": "디자인 토큰 기반, 스타일 변형 13종",
+    "source": "community"
+  },
+  {
+    "id": "terminal",
+    "pkg": "slidev-theme-terminal",
+    "name": "Terminal",
+    "description": "터미널 창 스타일, 셸 프롬프트, 색 구성 3종 (코딩 강의에 적합)",
+    "source": "recommended"
+  },
+  {
+    "id": "bestony2026",
+    "pkg": "slidev-theme-bestony2026",
+    "name": "Crimson Deck",
+    "description": "검정 바탕 크림슨 강조, 레이아웃 27개와 ECharts 차트",
+    "source": "recommended"
+  },
+  {
+    "id": "zhibai",
+    "pkg": "slidev-theme-zhibai",
+    "name": "Zhibai",
+    "description": "종이·먹 느낌의 편집 디자인, 프리셋 5종",
+    "source": "recommended"
+  },
+  {
+    "id": "legible",
+    "pkg": "slidev-theme-legible",
+    "name": "Legible",
+    "description": "슬라이드당 주장 하나(Assertion-Evidence), 큰 글씨",
+    "source": "recommended"
+  }
+]

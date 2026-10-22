@@ -2,12 +2,19 @@
 // 동작: md 파일 폴더에서 위로 올라가며 Slidev 가 설치된 프로젝트(node_modules/.bin/slidev 또는 package.json 의 @slidev/cli)를 찾고
 //       (projectRoot 설정이 있으면 그 폴더), 빈 포트를 골라 그 폴더의 터미널에서 `npx slidev <상대경로> --port N …` 을 실행한다.
 //       Slidev 가 설치된 곳이 없으면 npx 가 @slidev/cli 와 기본 테마를 내려받아 실행한다 (설치 없이 동작).
+//       내장 테마(themes.json): 프런트매터 theme 이름이나 defaultTheme 설정이 목록에 있으면 캐시 폴더에 내려받아 --theme 절대 경로로 넘긴다.
 //       서버가 응답하면 설정에 따라 외부 브라우저(--open) 또는 VS Code Simple Browser 에 띄우고, 발표자 모드도 열 수 있다.
 //       파일마다 터미널 하나를 쓴다. 설정 목록은 package.json 의 contributes.configuration.
 const path = require('path')
 const fs = require('fs')
 const net = require('net')
 const http = require('http')
+const { exec } = require('child_process')
+
+// 내장 테마 카탈로그 (themes.json): 공식 갤러리 + 추천. 이름만으로 쓸 수 있고, 처음 쓸 때 캐시 폴더에 npm 으로 내려받는다.
+const CATALOG = require('./themes.json')
+const BY_ID = new Map(CATALOG.map(t => [t.id, t]))
+const BY_PKG = new Map(CATALOG.map(t => [t.pkg, t]))
 
 // ---------- vscode 없이도 쓰는 순수 함수 (node 로 테스트 가능) ----------
 function hasSlidevDep(dir) {
@@ -55,6 +62,60 @@ function frontmatterHasTheme(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/)
   return Boolean(m && /^theme\s*:/m.test(m[1]))
 }
+/** md 프런트매터의 theme 값 (없으면 null). */
+function frontmatterTheme(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+  if (!m) return null
+  const t = m[1].match(/^theme\s*:\s*(.+?)\s*$/m)
+  return t ? t[1].replace(/^['"]|['"]$/g, '') : null
+}
+/** 경로처럼 보이는 테마 값인가 (./, ../, /, C:\, ~). */
+function isPathLike(v) { return /^(\.{1,2}[\\/]|[\\/]|[A-Za-z]:[\\/]|~)/.test(v) }
+/** Slidev 규칙대로 테마 이름 → 패키지 이름 후보. */
+function themeCandidates(name) {
+  if (name.startsWith('@') || name.startsWith('slidev-theme-')) return [name]
+  return [`@slidev/theme-${name}`, `slidev-theme-${name}`]
+}
+/** 이름(짧은 id, 패키지 이름)으로 카탈로그 항목 찾기. 없으면 null. */
+function catalogEntry(name) {
+  if (BY_ID.has(name)) return BY_ID.get(name)
+  for (const c of themeCandidates(name)) if (BY_PKG.has(c)) return BY_PKG.get(c)
+  return null
+}
+/** startDir 에서 위로 올라가며 node_modules/<pkg> 가 있는지. */
+function findLocalPackage(startDir, pkg) {
+  let dir = startDir
+  for (;;) {
+    if (fs.existsSync(path.join(dir, 'node_modules', pkg, 'package.json'))) return path.join(dir, 'node_modules', pkg)
+    const parent = path.dirname(dir)
+    if (parent === dir) return null
+    dir = parent
+  }
+}
+
+// ---------- 테마 캐시 (globalStorage/themes): npm 으로 내려받아 두고 --theme 절대 경로로 넘긴다 ----------
+function cacheInit(cacheDir) {
+  fs.mkdirSync(cacheDir, { recursive: true })
+  const pkg = path.join(cacheDir, 'package.json')
+  if (!fs.existsSync(pkg)) fs.writeFileSync(pkg, JSON.stringify({ name: 'open-with-slidev-themes', private: true, description: 'Open with Slidev 익스텐션이 내려받은 Slidev 테마 캐시' }, null, 2))
+  fs.writeFileSync(path.join(cacheDir, '.npmrc'), 'legacy-peer-deps=true\naudit=false\nfund=false\n')   // 테마의 peer(@slidev/cli 등)를 끌어오지 않게
+}
+function cachedThemePath(cacheDir, pkg) {
+  const p = path.join(cacheDir, 'node_modules', pkg)
+  return fs.existsSync(path.join(p, 'package.json')) ? p : null
+}
+/** 캐시 폴더에 패키지를 설치한다. vite 는 vite.config 를 가진 테마(neversink 등)가 필요로 해 함께 둔다. */
+function npmInstall(cacheDir, pkgs) {
+  cacheInit(cacheDir)
+  const list = [...new Set([...pkgs, 'vite'])].map(p => `"${p}"`).join(' ')
+  return new Promise((resolve, reject) => {
+    exec(`npm install --save ${list}`, { cwd: cacheDir, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) reject(new Error((stderr || stdout || err.message).trim().split('\n').slice(-6).join('\n')))
+      else resolve(stdout)
+    })
+  })
+}
+
 /** defaultTheme 설정값 → 폴더가 실제로 있으면 절대 경로, 아니면 테마 이름 그대로. */
 function resolveTheme(value, root) {
   const v = (value || '').trim()
@@ -112,6 +173,34 @@ function activate(context) {
   }
   updateContext()
   context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateContext))
+
+  const cacheDir = path.join(context.globalStorageUri.fsPath, 'themes')
+  /** 카탈로그 테마를 캐시에 준비하고 그 경로를 돌려준다. 실패하면 null (안내 메시지 표시). */
+  const ensureTheme = async (entry) => {
+    const have = cachedThemePath(cacheDir, entry.pkg)
+    if (have) return have
+    try {
+      await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `Slidev 테마 '${entry.name}' 내려받는 중… (처음 한 번)` },
+        () => npmInstall(cacheDir, [entry.pkg]))
+      return cachedThemePath(cacheDir, entry.pkg)
+    } catch (e) {
+      vscode.window.showErrorMessage(`Open with Slidev: 테마 '${entry.name}' 설치 실패. 터미널에서 직접: cd "${cacheDir}" && npm install --save ${entry.pkg}\n${e.message}`)
+      return null
+    }
+  }
+  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.downloadThemes', async () => {
+    const picks = await vscode.window.showQuickPick(
+      CATALOG.map(t => ({ label: t.name, description: t.id, detail: t.description, picked: Boolean(cachedThemePath(cacheDir, t.pkg)), entry: t })),
+      { canPickMany: true, title: '미리 내려받을 Slidev 테마 (이미 받은 것은 체크됨)', placeHolder: '여러 개 선택 가능' })
+    if (!picks) return
+    const todo = picks.map(p => p.entry).filter(t => !cachedThemePath(cacheDir, t.pkg))
+    if (!todo.length) { vscode.window.showInformationMessage('선택한 테마는 모두 이미 내려받았습니다.'); return }
+    try {
+      await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `Slidev 테마 ${todo.length}개 내려받는 중…` },
+        () => npmInstall(cacheDir, todo.map(t => t.pkg)))
+      vscode.window.showInformationMessage(`테마 ${todo.map(t => t.name).join(', ')} 준비 완료 (${cacheDir})`)
+    } catch (e) { vscode.window.showErrorMessage(`테마 설치 실패: ${e.message}`) }
+  }))
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('openWithSlidev')) updateContext() }))
 
   const open = async (uri) => {
@@ -164,12 +253,23 @@ function activate(context) {
     const command = template.replace(/\$\{file\}/g, rel).replace(/\$\{root\}/g, root)
     const flags = [`--port ${port}`]
     if (previewIn === 'browser') flags.push('--open')
-    const theme = c.get('defaultTheme', '')
-    if (theme) {
-      let hasTheme = false
-      try { hasTheme = frontmatterHasTheme(fs.readFileSync(file, 'utf8')) } catch { /* 읽기 실패면 테마를 넘긴다 */ }
-      if (!hasTheme) flags.push(`--theme "${resolveTheme(theme, root)}"`)
+    // 테마: ① 프런트매터에 이름이 있고 프로젝트에 그 패키지가 없는데 내장 목록에 있으면 캐시에서 ② 프런트매터에 없으면 defaultThemePath > defaultTheme(내장)
+    let text = ''
+    try { text = fs.readFileSync(file, 'utf8') } catch { /* 읽기 실패: 테마 처리 생략 */ }
+    const fm = frontmatterTheme(text)
+    let themeArg = ''
+    if (fm) {
+      if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
+        const entry = catalogEntry(fm)
+        if (entry) themeArg = (await ensureTheme(entry)) || ''
+      }
+    } else {
+      const custom = (c.get('defaultThemePath') || '').trim()
+      const sel = c.get('defaultTheme', '')
+      if (custom) themeArg = resolveTheme(custom, root)
+      else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
     }
+    if (themeArg) flags.push(`--theme "${themeArg}"`)
     const extra = (c.get('extraArgs') || '').trim()
     if (extra) flags.push(extra)
 
@@ -197,4 +297,4 @@ function activate(context) {
 
 function deactivate() { for (const s of sessions.values()) s.terminal.dispose(); sessions.clear() }
 
-module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, resolveTheme, findFreePort }
+module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, cacheInit, cachedThemePath, npmInstall, CATALOG }
