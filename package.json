@@ -2,7 +2,7 @@
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
   "description": "마크다운 편집기나 탐색기에서 우클릭 → 'Open with Slidev' 로 현재 md 파일을 Slidev 로 띄운다 (Live Preview 의 Show Preview 처럼).",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "leekh",
   "license": "MIT",
   "engines": {
