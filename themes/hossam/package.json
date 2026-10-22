@@ -1,0 +1,24 @@
+{
+  "name": "slidev-theme-hossam",
+  "version": "0.2.0",
+  "private": true,
+  "description": "파이썬 기초 과정 공통 테마 (흰 바탕 · 왼쪽 목차 사이드바 · 콜아웃/프롬프트/출력 상자). Open with Slidev 익스텐션 내장 테마.",
+  "keywords": [
+    "slidev-theme",
+    "slidev"
+  ],
+  "slidev": {
+    "defaults": {
+      "aspectRatio": "16/9",
+      "canvasWidth": 1180,
+      "fonts": {
+        "mono": "JetBrains Mono",
+        "local": "Pretendard Variable, Pretendard"
+      },
+      "transition": "slide-left",
+      "lineNumbers": true
+    },
+    "colorSchema": "both",
+    "highlighter": "shiki"
+  }
+}

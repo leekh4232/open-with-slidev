@@ -116,6 +116,21 @@ function npmInstall(cacheDir, pkgs) {
   })
 }
 
+/** 익스텐션에 동봉된 테마(entry.bundled)를 캐시의 bundled/ 아래로 복사한다 (npm 이 지우지 않도록 node_modules 밖).
+ *  익스텐션 버전이 바뀌면 다시 복사. 동봉 테마가 @slidev/theme-default 의 스타일을 가져오므로 그 패키지는 캐시 node_modules 에 둔다. */
+async function ensureBundled(cacheDir, entry, extRoot, version) {
+  cacheInit(cacheDir)
+  const dest = path.join(cacheDir, 'bundled', entry.pkg)
+  const stamp = path.join(dest, '.bundled-version')
+  if (!fs.existsSync(stamp) || fs.readFileSync(stamp, 'utf8') !== version) {
+    fs.rmSync(dest, { recursive: true, force: true })
+    fs.cpSync(path.join(extRoot, entry.bundled), dest, { recursive: true })
+    fs.writeFileSync(stamp, version)
+  }
+  if (!cachedThemePath(cacheDir, '@slidev/theme-default')) await npmInstall(cacheDir, ['@slidev/theme-default'])
+  return dest
+}
+
 /** defaultTheme 설정값 → 폴더가 실제로 있으면 절대 경로, 아니면 테마 이름 그대로. */
 function resolveTheme(value, root) {
   const v = (value || '').trim()
@@ -177,6 +192,10 @@ function activate(context) {
   const cacheDir = path.join(context.globalStorageUri.fsPath, 'themes')
   /** 카탈로그 테마를 캐시에 준비하고 그 경로를 돌려준다. 실패하면 null (안내 메시지 표시). */
   const ensureTheme = async (entry) => {
+    if (entry.bundled) {   // 익스텐션 동봉 테마 (hossam)
+      try { return await ensureBundled(cacheDir, entry, context.extensionPath, context.extension.packageJSON.version) }
+      catch (e) { vscode.window.showErrorMessage(`Open with Slidev: 내장 테마 '${entry.name}' 준비 실패. ${e.message}`); return null }
+    }
     const have = cachedThemePath(cacheDir, entry.pkg)
     if (have) return have
     try {
@@ -190,7 +209,7 @@ function activate(context) {
   }
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.downloadThemes', async () => {
     const picks = await vscode.window.showQuickPick(
-      CATALOG.map(t => ({ label: t.name, description: t.id, detail: t.description, picked: Boolean(cachedThemePath(cacheDir, t.pkg)), entry: t })),
+      CATALOG.filter(t => !t.bundled).map(t => ({ label: t.name, description: t.id, detail: t.description, picked: Boolean(cachedThemePath(cacheDir, t.pkg)), entry: t })),
       { canPickMany: true, title: '미리 내려받을 Slidev 테마 (이미 받은 것은 체크됨)', placeHolder: '여러 개 선택 가능' })
     if (!picks) return
     const todo = picks.map(p => p.entry).filter(t => !cachedThemePath(cacheDir, t.pkg))
@@ -297,4 +316,4 @@ function activate(context) {
 
 function deactivate() { for (const s of sessions.values()) s.terminal.dispose(); sessions.clear() }
 
-module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, cacheInit, cachedThemePath, npmInstall, CATALOG }
+module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, cacheInit, cachedThemePath, npmInstall, ensureBundled, CATALOG }

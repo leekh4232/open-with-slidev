@@ -8,7 +8,7 @@
 - **설치 없이 동작**: Slidev가 설치된 폴더가 md 파일 위쪽에 있으면 그곳에서, 없으면 `npx`가 Slidev를 내려받아 실행합니다.
 - **빈 포트 자동 선택**: 3030부터 비어 있는 포트를 골라 덱 여러 개를 동시에 띄울 수 있습니다.
 - **미리보기 위치 선택**: 외부 브라우저 또는 VS Code 안 Simple Browser 탭(편집기 옆) 중 고를 수 있습니다.
-- **내장 테마 32종**: 공식 갤러리 테마 28종과 추천 테마 4종을 이름만으로 씁니다. 프로젝트에 설치돼 있지 않아도 처음 쓸 때 내려받아 캐시에 두고, 프런트매터에 `theme`가 없는 파일에는 설정에서 고른 기본 테마를 적용합니다.
+- **내장 테마 33종**: 익스텐션에 동봉된 `hossam`(기본값)과 공식 갤러리 테마 28종, 추천 테마 4종을 이름만으로 씁니다. 프로젝트에 설치돼 있지 않아도 처음 쓸 때 내려받아 캐시에 두고, 프런트매터에 `theme`가 없는 파일에는 설정에서 고른 기본 테마를 적용합니다.
 - **발표자 모드**: 원하면 `/presenter` 화면도 함께 엽니다.
 - **파일마다 터미널 하나**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주거나(기본) 서버를 다시 띄웁니다.
 
@@ -34,6 +34,7 @@ Node.js 18 이상만 있으면 됩니다. **프로젝트에 Slidev를 설치하�
 
 아래 이름을 md 프런트매터에 쓰거나(`theme: terminal`), 설정 `openWithSlidev.defaultTheme` 드롭다운에서 고르면 됩니다. 프로젝트에 해당 패키지가 이미 설치돼 있으면 그것을 쓰고, 없으면 처음 한 번 npm으로 내려받아 캐시에 둔 뒤 `--theme` 절대 경로로 넘깁니다.
 
+- 동봉(기본값): `hossam` — 흰 바탕, 왼쪽 목차 사이드바(폭 조절·접기·애니메이션 끔·확대/축소), 콜아웃·프롬프트·출력 상자. 익스텐션 안에 들어 있어 내려받기 없이 바로 쓰고, 테마를 지정하지 않은 md 파일에 기본으로 적용됩니다.
 - 공식: `default`, `seriph`, `apple-basic`, `bricks`, `shibainu`
 - 갤러리: `geist`, `light-icons`, `eloc`, `purplin`, `unicorn`, `zhozhoba`, `penguin`, `vuetiful`, `takahashi`, `academic`, `mokkapps`, `the-unnamed`, `dracula`, `frankfurt`, `hep`, `excali-slide`, `mint`, `neversink`, `nord`, `scholarly`, `field-manual`, `touying`, `tahta`
 - 추천: `terminal`, `bestony2026`, `zhibai`, `legible`
@@ -54,7 +55,7 @@ Node.js 18 이상만 있으면 됩니다. **프로젝트에 Slidev를 설치하�
 | `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고, `restart`는 서버를 끄고 다시 띄웁니다. |
 | `openWithSlidev.port` | `3030` | 시작 포트. 사용 중이면 다음 번호를 자동으로 찾습니다. |
 | `openWithSlidev.projectRoot` | (자동) | Slidev가 설치된 폴더. 비우면 md 파일 위쪽으로 자동 탐색합니다. 절대 경로 또는 워크스페이스 기준 상대 경로. |
-| `openWithSlidev.defaultTheme` | (없음) | 프런트매터에 `theme`가 없을 때 쓸 내장 테마(드롭다운). 처음 쓸 때 내려받습니다. 프런트매터의 `theme`가 우선합니다. |
+| `openWithSlidev.defaultTheme` | `hossam` | 프런트매터에 `theme`가 없을 때 쓸 내장 테마(드롭다운). `hossam` 외의 항목은 처음 쓸 때 내려받습니다. "지정 안 함"을 고르면 Slidev 기본 동작입니다. 프런트매터의 `theme`가 우선합니다. |
 | `openWithSlidev.defaultThemePath` | (없음) | 내장 목록에 없는 기본 테마: 폴더 경로(절대 또는 프로젝트 루트 기준) 또는 npm 테마 이름. 값이 있으면 드롭다운보다 우선합니다. |
 | `openWithSlidev.openPresenter` | `false` | 발표자 모드(`/presenter`)도 외부 브라우저로 함께 엽니다. |
 | `openWithSlidev.filePatterns` | `["**/*.md"]` | 편집기 우클릭 메뉴를 보일 파일(glob, 워크스페이스 기준). 폴더 없이 쓰면 파일 이름만 비교합니다. 탐색기 메뉴는 `.md` 전체에 보이고 실행 시 검사합니다. |
@@ -91,7 +92,7 @@ code --install-extension open-with-slidev-<버전>.vsix
 
 ## 개발
 
-빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `themes.json`(내장 테마 목록) 셋뿐입니다.
+빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `themes.json`(내장 테마 목록), `themes/hossam/`(동봉 테마)입니다. 동봉 테마를 고치면 `themes/hossam/`을 바꾸고 다시 패키징합니다. 캐시에는 익스텐션 버전별로 다시 복사됩니다.
 
 ```bash
 npm install                                   # 패키징 도구(@vscode/vsce) 설치

@@ -1,5 +1,13 @@
 [
   {
+    "id": "hossam",
+    "pkg": "slidev-theme-hossam",
+    "name": "Hossam",
+    "description": "파이썬 기초 과정 테마: 흰 바탕, 왼쪽 목차 사이드바(폭 조절·접기·확대/축소), 콜아웃·프롬프트·출력 상자",
+    "source": "builtin",
+    "bundled": "themes/hossam"
+  },
+  {
     "id": "default",
     "pkg": "@slidev/theme-default",
     "name": "Default",
