@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+- 포트가 사용 중이면 1씩 올려 최대 3회 재시도, 모두 막혀 있으면 안내
+- 터미널에 진행 과정(파일·루트·포트·테마) 출력, 서버가 뜰 때까지 경과 시간이 보이는 로딩 알림(취소 가능), 대기 한도 3분
+
 ## 0.2.0
 - 설정 10개 추가: previewIn(VS Code Simple Browser 미리보기), command, extraArgs, onRerun(restart), port(빈 포트 자동 탐색), projectRoot, defaultTheme(프런트매터에 theme 가 없을 때 기본 테마), openPresenter, filePatterns, stopOnClose
 - 서버가 응답할 때까지 기다린 뒤 미리보기·발표자 모드를 연다

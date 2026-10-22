@@ -139,23 +139,26 @@ function resolveTheme(value, root) {
   return fs.existsSync(abs) ? abs : v
 }
 
-/** start 부터 올라가며 비어 있는 포트를 찾는다. */
-function findFreePort(start) {
+/** start 부터 1씩 올리며 비어 있는 포트를 찾는다 (최대 tries 회). { port, busy: [사용 중이던 포트…] }, 다 막혀 있으면 port 는 null. */
+function findFreePort(start, tries = 3) {
   return new Promise(resolve => {
-    const tryPort = p => {
+    const busy = []
+    const tryPort = (p, left) => {
+      if (left === 0) return resolve({ port: null, busy })
       const s = net.createServer()
-      s.once('error', () => tryPort(p + 1))
-      s.once('listening', () => s.close(() => resolve(p)))
+      s.once('error', () => { busy.push(p); tryPort(p + 1, left - 1) })
+      s.once('listening', () => s.close(() => resolve({ port: p, busy })))
       s.listen(p, '127.0.0.1')
     }
-    tryPort(start)
+    tryPort(start, tries)
   })
 }
-/** 서버가 HTTP 응답을 줄 때까지 기다린다 (0.5초 간격, timeoutMs 까지). */
-function waitForServer(url, timeoutMs = 60000) {
+/** 서버가 HTTP 응답을 줄 때까지 기다린다 (0.5초 간격, timeoutMs 까지). isCancelled() 가 true 가 되면 'cancelled'. */
+function waitForServer(url, timeoutMs = 180000, isCancelled = () => false) {
   return new Promise(resolve => {
     const t0 = Date.now()
     const tick = () => {
+      if (isCancelled()) return resolve('cancelled')
       const req = http.get(url, res => { res.resume(); resolve(true) })
       req.on('error', () => (Date.now() - t0 > timeoutMs ? resolve(false) : setTimeout(tick, 500)))
       req.setTimeout(2000, () => req.destroy())
@@ -265,7 +268,12 @@ function activate(context) {
       }
     }
 
-    const port = await findFreePort(Number(c.get('port', 3030)) || 3030)
+    const startPort = Number(c.get('port', 3030)) || 3030
+    const { port, busy } = await findFreePort(startPort, 3)        // 사용 중이면 +1, 최대 3회
+    if (!port) {
+      vscode.window.showErrorMessage(`Open with Slidev: 포트 ${startPort}~${startPort + 2} 가 모두 사용 중입니다. 다른 Slidev 터미널을 닫거나 openWithSlidev.port 를 바꾸세요.`)
+      return
+    }
     const url = `http://localhost:${port}/`
     const rel = path.relative(root, file)
     const template = customCommand ? c.get('command') : (localSlidev ? DEFAULT_COMMAND : FALLBACK_COMMAND)
@@ -295,10 +303,29 @@ function activate(context) {
     const terminal = vscode.window.createTerminal({ name: `Slidev: ${path.basename(file)}`, cwd: root })
     sessions.set(file, { terminal, port, url })
     terminal.show(previewIn === 'vscode')
+    // 진행 과정을 터미널에 남긴다 (서버가 뜬 뒤에는 보내지 않는다: Slidev 가 터미널 키 입력을 단축키로 받기 때문)
+    const log = []
+    log.push(`[Open with Slidev] 파일: ${rel}`)
+    log.push(`[Open with Slidev] 프로젝트 루트: ${root}${localSlidev ? '' : ' (Slidev 없음 → npx 로 내려받아 실행, 처음은 1~2분)'}`)
+    for (const b of busy) log.push(`[Open with Slidev] 포트 ${b} 사용 중 → ${b + 1} 시도`)
+    log.push(`[Open with Slidev] 포트 ${port} 사용`)
+    if (themeArg) log.push(`[Open with Slidev] 테마: ${themeArg}`)
+    log.push(`[Open with Slidev] 서버를 시작합니다. 브라우저는 ${url} 이 응답하면 자동으로 열립니다…`)
+    terminal.sendText(log.map(l => `echo "${l.replace(/"/g, '\\"')}"`).join(' && '))
     terminal.sendText(`${command} ${flags.join(' ')}`)
 
-    const up = await waitForServer(url)
-    if (!up) { vscode.window.showWarningMessage(`Open with Slidev: ${url} 이 60초 안에 응답하지 않습니다. 터미널 출력을 확인하세요.`); return }
+    // 로딩 알림: 경과 시간을 1초마다 갱신하고, 취소하면 터미널을 닫는다
+    const phase = localSlidev ? 'Slidev 서버 시작 중' : 'Slidev 내려받고 서버 시작 중 (처음 한 번)'
+    const up = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: 'Open with Slidev', cancellable: true },
+      (progress, token) => {
+        const t0 = Date.now()
+        const tickMsg = () => progress.report({ message: `${phase} · 포트 ${port} · ${Math.round((Date.now() - t0) / 1000)}초` })
+        tickMsg(); const timer = setInterval(tickMsg, 1000)
+        return waitForServer(url, 180000, () => token.isCancellationRequested).finally(() => clearInterval(timer))
+      })
+    if (up === 'cancelled') { terminal.dispose(); sessions.delete(file); return }
+    if (!up) { vscode.window.showWarningMessage(`Open with Slidev: ${url} 이 3분 안에 응답하지 않습니다. 터미널 출력을 확인하세요.`); return }
     if (previewIn === 'vscode') await vscode.commands.executeCommand('simpleBrowser.show', url, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false })
     if (c.get('openPresenter', false)) vscode.env.openExternal(vscode.Uri.parse(url + 'presenter/'))
   }
@@ -316,4 +343,4 @@ function activate(context) {
 
 function deactivate() { for (const s of sessions.values()) s.terminal.dispose(); sessions.clear() }
 
-module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, cacheInit, cachedThemePath, npmInstall, ensureBundled, CATALOG }
+module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, waitForServer, cacheInit, cachedThemePath, npmInstall, ensureBundled, CATALOG }
