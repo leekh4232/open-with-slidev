@@ -1,31 +1,97 @@
 # Open with Slidev
 
-마크다운 편집기 안이나 탐색기의 `.md` 파일에서 **우클릭 → Open with Slidev** 를 누르면, 그 파일을 Slidev 개발 서버로 띄우고 브라우저를 연다. Live Preview 의 "Show Preview" 와 같은 쓰임새.
+마크다운 파일을 우클릭하고 **Open with Slidev** 를 누르면 그 파일이 [Slidev](https://sli.dev) 슬라이드로 열립니다. 터미널을 열고, 프로젝트 폴더로 이동하고, 명령을 입력하는 과정이 메뉴 하나로 줄어듭니다.
 
-- 파일 위쪽 폴더에서 Slidev 가 설치된 프로젝트(`node_modules/.bin/slidev`)를 찾아 그 폴더에서 `npx slidev <파일> --open` 을 실행한다.
-- 파일마다 터미널 하나(`Slidev: 파일명`)를 쓴다. 다시 누르면 그 터미널을 보여 주고, 서버를 새로 띄우려면 터미널을 닫고 다시 누른다.
-- 끝낼 때는 터미널에서 Ctrl+C 또는 터미널 닫기.
+## 할 수 있는 것
 
-## 설정 (Settings → "Open with Slidev")
-| 설정 | 기본값 | 뜻 |
+- **우클릭 한 번으로 실행**: 편집기 본문, 편집기 탭, 탐색기의 `.md` 파일 어디서든 메뉴가 보입니다.
+- **프로젝트 자동 탐색**: md 파일이 있는 폴더에서 위로 올라가며 Slidev가 설치된 폴더(`node_modules/.bin/slidev`)를 찾아 그곳에서 실행합니다.
+- **빈 포트 자동 선택**: 3030부터 비어 있는 포트를 골라 덱 여러 개를 동시에 띄울 수 있습니다.
+- **미리보기 위치 선택**: 외부 브라우저 또는 VS Code 안 Simple Browser 탭(편집기 옆) 중 고를 수 있습니다.
+- **기본 테마 지정**: 프런트매터에 `theme`가 없는 파일에 자동으로 테마를 적용합니다.
+- **발표자 모드**: 원하면 `/presenter` 화면도 함께 엽니다.
+- **파일마다 터미널 하나**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주거나(기본) 서버를 다시 띄웁니다.
+
+## 준비물
+
+- Node.js 18 이상
+- Slidev가 설치된 프로젝트. 아직 없다면 슬라이드 폴더에서 한 번만 설치합니다.
+
+```bash
+npm init slidev@latest        # 새 프로젝트
+# 또는 기존 폴더에
+npm install -D @slidev/cli
+```
+
+프로젝트 밖에 있는 md 파일도 열 수 있습니다. 이때는 `npx`가 Slidev를 내려받아 실행하므로 첫 실행이 느릴 수 있고, `openWithSlidev.projectRoot` 설정으로 Slidev가 설치된 폴더를 지정하면 그 폴더에서 실행합니다.
+
+## 사용법
+
+1. 슬라이드 md 파일을 엽니다.
+2. 편집기 안에서 우클릭 → **Open with Slidev**. 탐색기에서 파일을 우클릭해도 됩니다.
+3. 저장하지 않은 내용이 있으면 먼저 저장하고, 터미널에서 서버가 뜬 뒤 브라우저(또는 Simple Browser 탭)에 슬라이드가 열립니다.
+
+명령 팔레트(`Cmd/Ctrl+Shift+P`)에서 `Slidev: Open with Slidev`로도 실행할 수 있습니다.
+
+서버를 끄려면 해당 터미널에서 `Ctrl+C`를 누르거나 터미널을 닫습니다. `openWithSlidev.stopOnClose`를 켜면 md 편집기를 닫을 때 서버도 함께 꺼집니다.
+
+## 설정
+
+설정 화면에서 "Open with Slidev"로 검색하거나 `settings.json`에 적습니다.
+
+| 설정 | 기본값 | 설명 |
 |---|---|---|
-| `openWithSlidev.previewIn` | `browser` | `browser` = 외부 브라우저(`--open`), `vscode` = VS Code 안 Simple Browser 탭을 편집기 옆에 |
-| `openWithSlidev.command` | `npx slidev "${file}"` | 실행 명령. `${file}` = 프로젝트 루트 기준 md 상대 경로, `${root}` = 프로젝트 루트. 포트·`--open`·테마·extraArgs 는 뒤에 자동으로 붙는다 |
-| `openWithSlidev.extraArgs` | (없음) | 명령 끝에 덧붙일 인자. 예: `--remote`, `--log info` |
-| `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus` = 기존 터미널 표시, `restart` = 서버를 끄고 다시 띄움 |
-| `openWithSlidev.port` | `3030` | 시작 포트. 사용 중이면 다음 번호를 자동으로 찾는다 |
-| `openWithSlidev.projectRoot` | (자동) | Slidev 가 설치된 폴더. 비우면 md 위쪽으로 자동 탐색. 절대 경로 또는 워크스페이스 기준 상대 경로 |
-| `openWithSlidev.defaultTheme` | (없음) | md 프런트매터에 `theme` 가 없을 때 쓸 테마. 폴더 경로(절대 또는 프로젝트 루트 기준) 또는 테마 이름. 프런트매터의 `theme` 가 우선 |
-| `openWithSlidev.openPresenter` | `false` | 발표자 모드(`/presenter`)도 외부 브라우저로 함께 연다 |
-| `openWithSlidev.filePatterns` | `["**/*.md"]` | 편집기 우클릭 메뉴를 보일 파일(glob). 탐색기 메뉴는 `.md` 전체에 보이되 실행 시 검사한다 |
-| `openWithSlidev.stopOnClose` | `false` | md 편집기를 닫으면 그 파일의 서버(터미널)도 끈다 |
+| `openWithSlidev.previewIn` | `browser` | `browser`: 외부 브라우저에서 엽니다. `vscode`: VS Code 안 Simple Browser 탭을 편집기 옆에 엽니다. |
+| `openWithSlidev.command` | `npx slidev "${file}"` | 실행 명령. `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 예: `pnpm exec slidev "${file}"` |
+| `openWithSlidev.extraArgs` | (없음) | 명령 끝에 덧붙일 인자. 예: `--remote`(다른 기기에서 접속), `--log info` |
+| `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고, `restart`는 서버를 끄고 다시 띄웁니다. |
+| `openWithSlidev.port` | `3030` | 시작 포트. 사용 중이면 다음 번호를 자동으로 찾습니다. |
+| `openWithSlidev.projectRoot` | (자동) | Slidev가 설치된 폴더. 비우면 md 파일 위쪽으로 자동 탐색합니다. 절대 경로 또는 워크스페이스 기준 상대 경로. |
+| `openWithSlidev.defaultTheme` | (없음) | 프런트매터에 `theme`가 없을 때 쓸 테마. 폴더 경로(절대 또는 프로젝트 루트 기준) 또는 테마 이름(예: `seriph`). 프런트매터의 `theme`가 우선합니다. |
+| `openWithSlidev.openPresenter` | `false` | 발표자 모드(`/presenter`)도 외부 브라우저로 함께 엽니다. |
+| `openWithSlidev.filePatterns` | `["**/*.md"]` | 편집기 우클릭 메뉴를 보일 파일(glob, 워크스페이스 기준). 폴더 없이 쓰면 파일 이름만 비교합니다. 탐색기 메뉴는 `.md` 전체에 보이고 실행 시 검사합니다. |
+| `openWithSlidev.stopOnClose` | `false` | md 편집기를 닫으면 그 파일의 서버(터미널)도 끕니다. |
+
+설정 예시:
+
+```jsonc
+{
+  "openWithSlidev.previewIn": "vscode",
+  "openWithSlidev.projectRoot": "slides",
+  "openWithSlidev.defaultTheme": "theme-dark",
+  "openWithSlidev.filePatterns": ["slides/**/*.md"],
+  "openWithSlidev.onRerun": "restart"
+}
+```
+
+## 동작 순서
+
+1. 파일이 `filePatterns`에 맞는지 확인하고, 수정 중이면 저장합니다.
+2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다.
+3. `port`부터 비어 있는 포트를 찾습니다.
+4. 루트에서 `command`에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다.
+5. 서버가 HTTP 응답을 줄 때까지(최대 60초) 기다린 뒤 미리보기와 발표자 모드를 엽니다.
 
 ## 설치
-```bash
-npx --yes @vscode/vsce package --allow-missing-repository   # 저장소 루트에서, open-with-slidev-0.1.0.vsix 생성
-code --install-extension open-with-slidev-0.1.0.vsix
-```
-그다음 VS Code 창을 다시 연다(Developer: Reload Window).
 
-## 배포
-main 에 push 한 커밋 메시지에 `build` 가 들어 있으면 GitHub Actions 가 버전을 올려(메시지에 `major`/`minor` 가 있으면 그 단위, 아니면 patch) VSIX 를 만들고, `VSCE_PAT` 시크릿으로 VS Code Marketplace 에 publish 한 뒤 v태그와 Release 를 만든다.
+Marketplace에서 "Open with Slidev"를 검색해 설치하거나, [Releases](https://github.com/leekh4232/open-with-slidev/releases)에서 `.vsix`를 받아 설치합니다.
+
+```bash
+code --install-extension open-with-slidev-<버전>.vsix
+```
+
+## 개발
+
+빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의)과 `extension.js`(동작) 둘뿐입니다.
+
+```bash
+npm install                                   # 패키징 도구(@vscode/vsce) 설치
+node -e "require('./extension.js')"            # 문법 확인
+npx vsce package --no-dependencies            # .vsix 만들기
+```
+
+`main` 브랜치에 push한 커밋 메시지에 `build`가 들어 있으면 GitHub Actions가 버전을 올리고(`major`/`minor`가 있으면 그 단위, 없으면 patch) VSIX를 만들어 Marketplace에 게시한 뒤, 버전 태그와 Release를 만듭니다.
+
+## 라이선스
+
+MIT
