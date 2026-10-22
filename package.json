@@ -24,7 +24,7 @@
       "editor/context": [
         {
           "command": "openWithSlidev.open",
-          "when": "resourceLangId == markdown",
+          "when": "resourceLangId == markdown && openWithSlidev.matches",
           "group": "navigation@1"
         }
       ],
@@ -42,6 +42,84 @@
           "group": "navigation@1"
         }
       ]
+    },
+    "configuration": {
+      "title": "Open with Slidev",
+      "properties": {
+        "openWithSlidev.previewIn": {
+          "type": "string",
+          "enum": [
+            "browser",
+            "vscode"
+          ],
+          "default": "browser",
+          "enumDescriptions": [
+            "외부 브라우저에서 연다 (slidev --open)",
+            "VS Code 안 Simple Browser 탭을 편집기 옆에 연다"
+          ],
+          "description": "슬라이드를 어디에 띄울지"
+        },
+        "openWithSlidev.command": {
+          "type": "string",
+          "default": "npx slidev \"${file}\"",
+          "description": "실행 명령. ${file} = 프로젝트 루트 기준 md 상대 경로, ${root} = 프로젝트 루트. 포트·--open·테마·extraArgs 는 뒤에 자동으로 붙는다. 예: pnpm exec slidev \"${file}\""
+        },
+        "openWithSlidev.extraArgs": {
+          "type": "string",
+          "default": "",
+          "description": "명령 끝에 덧붙일 인자. 예: --remote (다른 기기에서 보기), --log info"
+        },
+        "openWithSlidev.onRerun": {
+          "type": "string",
+          "enum": [
+            "focus",
+            "restart"
+          ],
+          "default": "focus",
+          "enumDescriptions": [
+            "이미 띄운 터미널을 보여 준다",
+            "서버를 끄고 다시 띄운다"
+          ],
+          "description": "같은 파일에서 다시 실행했을 때"
+        },
+        "openWithSlidev.port": {
+          "type": "number",
+          "default": 3030,
+          "minimum": 1024,
+          "maximum": 65535,
+          "description": "시작 포트. 사용 중이면 다음 번호를 자동으로 찾는다 (덱마다 3030, 3031, …)"
+        },
+        "openWithSlidev.projectRoot": {
+          "type": "string",
+          "default": "",
+          "description": "Slidev 가 설치된 폴더(node_modules/.bin/slidev 가 있는 곳). 비우면 md 파일 위쪽으로 자동 탐색. 절대 경로 또는 워크스페이스 기준 상대 경로"
+        },
+        "openWithSlidev.defaultTheme": {
+          "type": "string",
+          "default": "",
+          "description": "md 프런트매터에 theme 가 없을 때 쓸 테마. 폴더 경로(절대 또는 프로젝트 루트 기준) 또는 테마 이름(예: seriph). 프런트매터에 theme 가 있으면 그것이 우선"
+        },
+        "openWithSlidev.openPresenter": {
+          "type": "boolean",
+          "default": false,
+          "description": "발표자 모드(/presenter)도 외부 브라우저로 함께 연다"
+        },
+        "openWithSlidev.filePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/*.md"
+          ],
+          "description": "우클릭 메뉴를 보일 파일(glob, 워크스페이스 기준). 예: [\"**/*.nb.md\", \"slides/**/*.md\"]. 폴더 없이 쓰면 파일 이름만 비교한다"
+        },
+        "openWithSlidev.stopOnClose": {
+          "type": "boolean",
+          "default": false,
+          "description": "md 편집기를 닫으면 그 파일의 Slidev 서버(터미널)도 끈다"
+        }
+      }
     }
   },
   "repository": {
@@ -54,5 +132,8 @@
   "scripts": {
     "package": "vsce package --no-dependencies",
     "publish": "vsce publish --no-dependencies"
-  }
+  },
+  "activationEvents": [
+    "onLanguage:markdown"
+  ]
 }
