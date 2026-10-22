@@ -1,6 +1,7 @@
 // Open with Slidev — 우클릭한 md 파일을 Slidev 개발 서버로 띄운다.
 // 동작: md 파일 폴더에서 위로 올라가며 Slidev 가 설치된 프로젝트(node_modules/.bin/slidev 또는 package.json 의 @slidev/cli)를 찾고
 //       (projectRoot 설정이 있으면 그 폴더), 빈 포트를 골라 그 폴더의 터미널에서 `npx slidev <상대경로> --port N …` 을 실행한다.
+//       Slidev 가 설치된 곳이 없으면 npx 가 @slidev/cli 와 기본 테마를 내려받아 실행한다 (설치 없이 동작).
 //       서버가 응답하면 설정에 따라 외부 브라우저(--open) 또는 VS Code Simple Browser 에 띄우고, 발표자 모드도 열 수 있다.
 //       파일마다 터미널 하나를 쓴다. 설정 목록은 package.json 의 contributes.configuration.
 const path = require('path')
@@ -89,6 +90,10 @@ function waitForServer(url, timeoutMs = 60000) {
 
 // ---------- 익스텐션 ----------
 const sessions = new Map()   // 파일 경로 → { terminal, port, url }
+const notified = new Set()   // "npx 로 내려받아 실행" 안내를 띄운 루트
+const DEFAULT_COMMAND = 'npx slidev "${file}"'
+// 프로젝트에 Slidev 가 없을 때: npm 에 "slidev" 패키지는 없으므로 @slidev/cli 와 기본 테마를 이름으로 지정해 받아 실행한다
+const FALLBACK_COMMAND = 'npx -y -p @slidev/cli -p @slidev/theme-default slidev "${file}"'
 
 function activate(context) {
   const vscode = require('vscode')
@@ -131,8 +136,13 @@ function activate(context) {
     const root = rootSetting
       ? path.resolve(ws || path.dirname(file), rootSetting)
       : (findSlidevRoot(path.dirname(file), ws) || ws || path.dirname(file))
-    if (!isSlidevRoot(root)) {
-      vscode.window.showWarningMessage(`Open with Slidev: ${root} 에 Slidev 가 설치돼 있지 않습니다. npx 가 내려받아 실행을 시도합니다 (projectRoot 설정으로 폴더를 지정할 수 있습니다).`)
+    // 프로젝트에 Slidev 가 없으면 npx 로 @slidev/cli 와 기본 테마를 내려받아 실행한다 (처음 한 번만 느리고 이후는 캐시).
+    // command 를 직접 바꾼 사용자는 그 명령을 그대로 쓴다 (예: 전역 설치 slidev).
+    const localSlidev = isSlidevRoot(root)
+    const customCommand = c.get('command') && c.get('command') !== DEFAULT_COMMAND
+    if (!localSlidev && !customCommand && !notified.has(root)) {
+      notified.add(root)
+      vscode.window.showInformationMessage(`Open with Slidev: ${path.basename(root)} 에 Slidev 가 없어 npx 로 내려받아 실행합니다. 첫 실행은 시간이 걸릴 수 있습니다.`)
     }
 
     const previewIn = c.get('previewIn', 'browser')
@@ -150,7 +160,8 @@ function activate(context) {
     const port = await findFreePort(Number(c.get('port', 3030)) || 3030)
     const url = `http://localhost:${port}/`
     const rel = path.relative(root, file)
-    const command = (c.get('command') || 'npx slidev "${file}"').replace(/\$\{file\}/g, rel).replace(/\$\{root\}/g, root)
+    const template = customCommand ? c.get('command') : (localSlidev ? DEFAULT_COMMAND : FALLBACK_COMMAND)
+    const command = template.replace(/\$\{file\}/g, rel).replace(/\$\{root\}/g, root)
     const flags = [`--port ${port}`]
     if (previewIn === 'browser') flags.push('--open')
     const theme = c.get('defaultTheme', '')
