@@ -12,3 +12,6 @@ npx --yes @vscode/vsce package --allow-missing-repository   # 저장소 루트�
 code --install-extension open-with-slidev-0.1.0.vsix
 ```
 그다음 VS Code 창을 다시 연다(Developer: Reload Window).
+
+## 배포
+main 에 push 한 커밋 메시지에 `build` 가 들어 있으면 GitHub Actions 가 버전을 올려(메시지에 `major`/`minor` 가 있으면 그 단위, 아니면 patch) VSIX 를 만들고, `VSCE_PAT` 시크릿으로 VS Code Marketplace 에 publish 한 뒤 v태그와 Release 를 만든다.

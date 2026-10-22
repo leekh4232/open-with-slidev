@@ -3,3 +3,6 @@ node_modules/**
 *.vsix
 .gitignore
 .DS_Store
+.github/**
+package-lock.json
+CHANGELOG.md

@@ -47,5 +47,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/leekh4232/open-with-slidev.git"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3"
+  },
+  "scripts": {
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
   }
 }
