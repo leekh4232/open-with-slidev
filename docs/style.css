@@ -1,0 +1,59 @@
+/* Open with Slidev 테마 매뉴얼 공통 스타일 (GitHub Pages, 빌드 없음) */
+:root {
+  --bg: #ffffff; --fg: #16213a; --muted: #5d6b85; --line: rgba(10, 20, 40, 0.12);
+  --surface: #f3f6fb; --accent: #0a7fc2; --accent-2: #ff0080; --code-bg: #0f1830; --code-fg: #e8eef8;
+  --sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f1420; --fg: #e8eef8; --muted: #93a3bd; --line: rgba(255, 255, 255, 0.12); --surface: #161d2e; --accent: #5fc9f8; --code-bg: #0a0f1a; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); line-height: 1.65; word-break: keep-all; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.top { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+.top .in { max-width: 960px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.top .brand { font-weight: 800; letter-spacing: -0.01em; color: var(--fg); }
+.top nav { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.95rem; }
+.top nav a.current { color: var(--fg); font-weight: 700; border-bottom: 2px solid var(--accent); }
+
+main { max-width: 960px; margin: 0 auto; padding: 28px 20px 80px; }
+.hero { padding: 28px 0 10px; }
+.hero h1 { font-size: 2.2rem; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 8px; }
+.hero p { font-size: 1.1rem; color: var(--muted); margin: 0; }
+.badge { display: inline-block; font-family: var(--mono); font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); margin-left: 8px; vertical-align: middle; }
+
+h2 { font-size: 1.5rem; margin: 48px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; margin: 30px 0 8px; }
+p { margin: 8px 0; }
+ul, ol { padding-left: 1.3em; }
+li { margin: 4px 0; }
+code { font-family: var(--mono); font-size: 0.9em; background: var(--surface); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; }
+pre { background: var(--code-bg); color: var(--code-fg); padding: 16px 18px; border-radius: 12px; overflow-x: auto; font-size: 0.86rem; line-height: 1.55; margin: 12px 0 18px; }
+pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+table { width: 100%; border-collapse: collapse; font-size: 0.93rem; margin: 10px 0 18px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--surface); font-weight: 700; }
+td code { white-space: nowrap; }
+
+figure { margin: 14px 0 22px; }
+figure img { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+figcaption { font-size: 0.86rem; color: var(--muted); margin-top: 6px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+
+.note { border-left: 4px solid var(--accent); background: var(--surface); padding: 10px 14px; border-radius: 0 10px 10px 0; margin: 14px 0; }
+.note.warn { border-left-color: #d9611f; }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+@media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: var(--surface); }
+.card h3 { margin: 0 0 6px; }
+.card p { margin: 0 0 10px; color: var(--muted); }
+.card img { width: 100%; border-radius: 8px; border: 1px solid var(--line); margin-bottom: 10px; }
+kbd { font-family: var(--mono); font-size: 0.85em; padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--surface); }
+.toc { font-size: 0.95rem; columns: 2; column-gap: 24px; }
+@media (max-width: 720px) { .toc { columns: 1; } }
+footer { max-width: 960px; margin: 0 auto; padding: 20px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); }

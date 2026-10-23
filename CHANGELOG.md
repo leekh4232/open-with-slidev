@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+- 테마 매뉴얼(jussam·hossam 사용법, 컴포넌트 프롭, 예제 코드, 화면)을 docs/ 에 추가하고 GitHub Pages 로 게시. README 에 URL 정리
+- 예제 덱 docs/examples/jussam-example.md(가상 수치)·hossam-example.md. 강의 덱 샘플은 저장소에서 제거
+- VSIX 에서 docs/ 제외
+
 ## 0.3.0
 - 동봉 테마 jussam 추가(특강·발표용 다크 테마: 메시 그라디언트 표지, 파트별 시그니처 색, 카드·스탯·차트 상자)하고 기본 테마로 지정. 내장 테마 34종
 - jussam 컴포넌트 22종(Grid·Card·Stat·Kicker·Agenda/NumList·BeforeAfter·Timeline·Gauge·Slope·Funnel·Branch·HBar·Meter·Bars·Mul·Formula 등): md 에 HTML 없이 태그만으로 구성

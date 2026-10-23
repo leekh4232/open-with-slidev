@@ -35,7 +35,7 @@ Node.js 18 이상만 있으면 됩니다. **프로젝트에 Slidev를 설치하�
 
 아래 이름을 md 프런트매터에 쓰거나(`theme: terminal`), 설정 `openWithSlidev.defaultTheme` 드롭다운에서 고르면 됩니다. 프로젝트에 해당 패키지가 이미 설치돼 있으면 그것을 쓰고, 없으면 처음 한 번 npm으로 내려받아 캐시에 둔 뒤 `--theme` 절대 경로로 넘깁니다.
 
-- 동봉(기본값): `jussam` — 특강·발표용 다크 테마. 검정 바탕, 메시 그라디언트 표지, 파트별 시그니처 색(프런트매터 `part: 1~4`). 레이아웃은 `cover`(표지·마무리)·`section`(파트 표지)·`default`(본문), 프런트매터 `eyebrow`(제목 위 머리말)·`source`(출처 각주). 제목의 `**굵게**`는 그라디언트 강조가 됩니다. 사용 예는 [samples/itwill-lecture.md](samples/itwill-lecture.md). 테마를 지정하지 않은 md 파일에 기본으로 적용됩니다.
+- 동봉(기본값): `jussam` — 특강·발표용 다크 테마. 검정 바탕, 메시 그라디언트 표지, 파트별 시그니처 색(프런트매터 `part: 1~4`). 레이아웃은 `cover`(표지·마무리)·`section`(파트 표지)·`default`(본문), 프런트매터 `eyebrow`(제목 위 머리말)·`source`(출처 각주). 제목의 `**굵게**`는 그라디언트 강조가 됩니다. 테마를 지정하지 않은 md 파일에 기본으로 적용됩니다. 사용법은 아래 [테마 매뉴얼](#테마-매뉴얼).
   - 컴포넌트(md 안에서 태그로 사용): 배치 `Grid`(cols·gap·title) · 상자 `Card`(k·t·acc·sm·lg·dim) `Stat`(n·unit·label·fill·mark) `Kicker`(lead·muted) `Note` `Spacer` `Hero` · 목록 `Agenda`/`NumList` + `Item`(title·part, 번호 자동) · 비교 `BeforeAfter` + `Side`(from/to·k·v) · 도식 `Timeline` `Gauge` `Slope` `Funnel` `Branch` `HBar` `Meter` `Bars` `Mul` `Formula`. 프롭은 각 파일 머리 주석에 있습니다(`themes/jussam/components/`).
   - 작성 규칙 세 가지: 컴포넌트 안에 마크다운(굵게·목록)을 쓰려면 여는 태그와 닫는 태그를 빈 줄로 띄웁니다. 긴 데이터(Timeline·Bars)는 슬라이드 프런트매터에 YAML로 두고 `v-bind="$frontmatter.이름"`으로 넘깁니다(태그를 여러 줄로 쪼개면 문단으로 잡힙니다). 굵게 바로 뒤에 조사가 붙는 곳(`**46%**가`)은 CommonMark가 닫지 못하므로 `<b>…</b>`를 씁니다.
 - 동봉: `hossam` — 흰 바탕, 왼쪽 목차 사이드바(폭 조절·접기·애니메이션 끔·확대/축소), 콜아웃·프롬프트·출력 상자(파이썬 기초 과정용). 두 동봉 테마는 익스텐션 안에 들어 있어 내려받기 없이 바로 씁니다.
@@ -46,6 +46,17 @@ Node.js 18 이상만 있으면 됩니다. **프로젝트에 Slidev를 설치하�
 - 캐시 위치는 VS Code의 익스텐션 전역 저장소(`globalStorage/leekh.open-with-slidev/themes`)이며, 명령 팔레트의 **Slidev: 내장 테마 미리 내려받기**로 여러 개를 한 번에 받아 둘 수 있습니다(오프라인 강의 전에 유용).
 - 일부 테마(purplin, light-icons, unicorn, zhozhoba)는 Slidev 전체를 의존성으로 끌어와 캐시가 수백 MB가 됩니다. 처음 내려받을 때 1~2분 걸릴 수 있습니다.
 - 목록에 없는 테마는 Slidev가 터미널에서 설치 여부를 묻는 기존 방식대로 동작하고, `openWithSlidev.defaultThemePath`로 경로나 npm 이름을 직접 지정할 수도 있습니다. 프런트매터의 테마가 프로젝트에도 내장 목록에도 없으면 실행 전에 경고를 띄웁니다(npm에 없는 이름이면 Slidev 설치가 404로 실패합니다).
+
+## 테마 매뉴얼
+
+두 동봉 테마의 사용법(레이아웃·컴포넌트·프런트매터·주의할 점)과 예제 코드는 GitHub Pages에 있습니다. 저장소의 `docs/` 폴더가 그대로 게시됩니다.
+
+| 문서 | URL |
+|---|---|
+| 매뉴얼 홈 | https://leekh4232.github.io/open-with-slidev/ |
+| jussam 테마 (특강·발표용 다크) | https://leekh4232.github.io/open-with-slidev/jussam.html |
+| hossam 테마 (강의용 라이트, 목차 사이드바) | https://leekh4232.github.io/open-with-slidev/hossam.html |
+| 예제 덱 | [docs/examples/jussam-example.md](docs/examples/jussam-example.md) · [docs/examples/hossam-example.md](docs/examples/hossam-example.md) |
 
 ## 설정
 
@@ -96,7 +107,7 @@ code --install-extension open-with-slidev-<버전>.vsix
 
 ## 개발
 
-빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `themes.json`(내장 테마 목록), `themes/jussam/`·`themes/hossam/`(동봉 테마), `samples/`(샘플 덱)입니다. 동봉 테마를 고치면 `themes/` 아래 폴더를 바꾸고 다시 패키징합니다. 캐시에는 익스텐션 버전별로 다시 복사됩니다.
+빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `themes.json`(내장 테마 목록), `themes/jussam/`·`themes/hossam/`(동봉 테마), `docs/`(테마 매뉴얼과 예제 덱, GitHub Pages로 게시)입니다. 동봉 테마를 고치면 `themes/` 아래 폴더를 바꾸고 다시 패키징합니다. 캐시에는 익스텐션 버전별로 다시 복사됩니다.
 
 ```bash
 npm install                                   # 패키징 도구(@vscode/vsce) 설치

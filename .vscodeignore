@@ -8,3 +8,4 @@ package-lock.json
 CHANGELOG.md
 *.html
 icon.svg
+docs/**
