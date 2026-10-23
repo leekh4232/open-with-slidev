@@ -1,10 +1,15 @@
 {
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
-  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없어도 되고, 내장 테마 33종을 이름만으로 쓸 수 있다.",
+  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없어도 되고, 내장 테마 34종을 이름만으로 쓸 수 있다.",
   "version": "0.2.1",
   "publisher": "leekh",
   "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#0a0a0a",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -43,7 +48,7 @@
       "explorer/context": [
         {
           "command": "openWithSlidev.open",
-          "when": "resourceExtname == .md",
+          "when": "resourceLangId == markdown || resourceExtname == .md",
           "group": "navigation@1"
         }
       ]
@@ -101,8 +106,9 @@
         },
         "openWithSlidev.defaultTheme": {
           "type": "string",
-          "default": "hossam",
+          "default": "jussam",
           "enum": [
+            "jussam",
             "hossam",
             "",
             "default",
@@ -139,6 +145,7 @@
             "legible"
           ],
           "enumDescriptions": [
+            "[내장] Jussam — 특강·발표용 다크 테마: 검정 바탕, 메시 그라디언트 표지, 파트별 시그니처 색, 카드·스탯·차트 상자",
             "[내장] Hossam — 파이썬 기초 과정 테마: 흰 바탕, 왼쪽 목차 사이드바(폭 조절·접기·확대/축소), 콜아웃·프롬프트·출력 상자",
             "지정 안 함 (Slidev 기본 동작)",
             "[공식] Default — Slidev 기본 테마. 미니멀, 라이트/다크",
@@ -174,7 +181,7 @@
             "[추천] Zhibai — 종이·먹 느낌의 편집 디자인, 프리셋 5종",
             "[추천] Legible — 슬라이드당 주장 하나(Assertion-Evidence), 큰 글씨"
           ],
-          "description": "md 프런트매터에 theme 가 없을 때 쓸 테마. 기본 hossam(익스텐션에 내장). 다른 항목은 처음 쓸 때 내려받아 캐시에 둔다. 프런트매터의 theme 가 우선"
+          "description": "md 프런트매터에 theme 가 없을 때 쓸 테마. 기본 jussam(익스텐션에 내장, hossam 도 내장). 다른 항목은 처음 쓸 때 내려받아 캐시에 둔다. 프런트매터의 theme 가 우선"
         },
         "openWithSlidev.defaultThemePath": {
           "type": "string",

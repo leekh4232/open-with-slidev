@@ -1,0 +1,27 @@
+{
+  "name": "slidev-theme-jussam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "특강·발표용 다크 테마 (검정 바탕 · 메시 그라디언트 표지 · 파트별 시그니처 색 · 카드/스탯/차트 상자). Open with Slidev 익스텐션 내장 테마.",
+  "keywords": [
+    "slidev-theme",
+    "slidev"
+  ],
+  "slidev": {
+    "defaults": {
+      "aspectRatio": "16/9",
+      "canvasWidth": 1280,
+      "fonts": {
+        "sans": "Pretendard Variable",
+        "mono": "ui-monospace",
+        "local": [
+          "Pretendard Variable",
+          "Pretendard",
+          "ui-monospace"
+        ]
+      }
+    },
+    "colorSchema": "dark",
+    "highlighter": "shiki"
+  }
+}

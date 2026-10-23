@@ -1,5 +1,13 @@
 [
   {
+    "id": "jussam",
+    "pkg": "slidev-theme-jussam",
+    "name": "Jussam",
+    "description": "특강·발표용 다크 테마: 검정 바탕, 메시 그라디언트 표지, 파트별 시그니처 색, 카드·스탯·차트 상자",
+    "source": "builtin",
+    "bundled": "themes/jussam"
+  },
+  {
     "id": "hossam",
     "pkg": "slidev-theme-hossam",
     "name": "Hossam",

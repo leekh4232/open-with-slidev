@@ -139,19 +139,24 @@ function resolveTheme(value, root) {
   return fs.existsSync(abs) ? abs : v
 }
 
-/** start 부터 1씩 올리며 비어 있는 포트를 찾는다 (최대 tries 회). { port, busy: [사용 중이던 포트…] }, 다 막혀 있으면 port 는 null. */
-function findFreePort(start, tries = 3) {
+/** host 에서 port 를 열 수 있는가. 이미 쓰는 중(EADDRINUSE)일 때만 false — IPv6 가 없는 환경의 ::1 오류 등은 비어 있는 것으로 본다. */
+function portFree(port, host) {
   return new Promise(resolve => {
-    const busy = []
-    const tryPort = (p, left) => {
-      if (left === 0) return resolve({ port: null, busy })
-      const s = net.createServer()
-      s.once('error', () => { busy.push(p); tryPort(p + 1, left - 1) })
-      s.once('listening', () => s.close(() => resolve({ port: p, busy })))
-      s.listen(p, '127.0.0.1')
-    }
-    tryPort(start, tries)
+    const s = net.createServer()
+    s.once('error', e => resolve(e.code !== 'EADDRINUSE'))
+    s.once('listening', () => s.close(() => resolve(true)))
+    s.listen(port, host)
   })
+}
+/** start 부터 1씩 올리며 비어 있는 포트를 찾는다 (최대 tries 회). { port, busy: [사용 중이던 포트…] }, 다 막혀 있으면 port 는 null.
+ *  Slidev(Vite) 는 localhost 를 IPv6 [::1] 에 묶는 일이 많아(macOS·Node 17+), 127.0.0.1 과 ::1 둘 다 비어 있어야 빈 포트로 친다. */
+async function findFreePort(start, tries = 3) {
+  const busy = []
+  for (let p = start; p < start + tries; p++) {
+    if (await portFree(p, '127.0.0.1') && await portFree(p, '::1')) return { port: p, busy }
+    busy.push(p)
+  }
+  return { port: null, busy }
 }
 /** 서버가 HTTP 응답을 줄 때까지 기다린다 (0.5초 간격, timeoutMs 까지). isCancelled() 가 true 가 되면 'cancelled'. */
 function waitForServer(url, timeoutMs = 180000, isCancelled = () => false) {
@@ -225,12 +230,33 @@ function activate(context) {
   }))
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('openWithSlidev')) updateContext() }))
 
+  /** 명령 팔레트에서 md 편집기 없이 실행했을 때: 워크스페이스의 md 파일(filePatterns 에 맞는 것) 중에서 고른다. 없거나 취소하면 null. */
+  const pickMarkdown = async () => {
+    const patterns = cfg().get('filePatterns', ['**/*.md'])
+    const found = await vscode.workspace.findFiles('**/*.md', '**/node_modules/**', 2000)
+    const items = found
+      .map(u => { const ws = vscode.workspace.getWorkspaceFolder(u)?.uri.fsPath; return { uri: u, rel: ws ? path.relative(ws, u.fsPath) : path.basename(u.fsPath) } })
+      .filter(i => matchesPatterns(i.rel, patterns))
+      .sort((a, b) => a.rel.localeCompare(b.rel))
+      .map(i => ({ label: path.basename(i.rel), description: path.dirname(i.rel) === '.' ? '' : path.dirname(i.rel), uri: i.uri }))
+    if (!items.length) {
+      vscode.window.showWarningMessage(found.length
+        ? `Open with Slidev: filePatterns 설정(${patterns.join(', ')})에 맞는 md 파일이 워크스페이스에 없습니다.`
+        : 'Open with Slidev: 마크다운(.md) 파일을 열고 실행하거나, md 파일이 있는 폴더를 여세요.')
+      return null
+    }
+    const pick = await vscode.window.showQuickPick(items, { title: 'Slidev 로 열 마크다운 파일', placeHolder: '파일 이름이나 폴더로 검색', matchOnDescription: true })
+    return pick ? pick.uri : null
+  }
+
   const open = async (uri) => {
     const c = cfg()
-    const target = uri instanceof vscode.Uri ? uri : vscode.window.activeTextEditor?.document.uri
-    if (!target || target.scheme !== 'file' || !/\.md$/i.test(target.fsPath)) {
-      vscode.window.showWarningMessage('Open with Slidev: 마크다운(.md) 파일에서 실행하세요.')
-      return
+    const isMd = u => u && u.scheme === 'file' && /\.md$/i.test(u.fsPath)
+    let target = uri instanceof vscode.Uri ? uri : vscode.window.activeTextEditor?.document.uri
+    if (!isMd(target)) {
+      if (uri instanceof vscode.Uri) { vscode.window.showWarningMessage('Open with Slidev: 마크다운(.md) 파일에서 실행하세요.'); return }
+      target = await pickMarkdown()
+      if (!target) return
     }
     const file = target.fsPath
     const ws = vscode.workspace.getWorkspaceFolder(target)?.uri.fsPath
@@ -285,10 +311,12 @@ function activate(context) {
     try { text = fs.readFileSync(file, 'utf8') } catch { /* 읽기 실패: 테마 처리 생략 */ }
     const fm = frontmatterTheme(text)
     let themeArg = ''
+    let themeMissing = ''   // 프런트매터 테마가 프로젝트에도 내장 목록에도 없을 때 그 이름: Slidev 가 npm 설치를 묻고, 패키지가 없으면 실패한다
     if (fm) {
       if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
         const entry = catalogEntry(fm)
         if (entry) themeArg = (await ensureTheme(entry)) || ''
+        else themeMissing = fm
       }
     } else {
       const custom = (c.get('defaultThemePath') || '').trim()
@@ -299,6 +327,10 @@ function activate(context) {
     if (themeArg) flags.push(`--theme "${themeArg}"`)
     const extra = (c.get('extraArgs') || '').trim()
     if (extra) flags.push(extra)
+    if (themeMissing && !notified.has(`theme:${themeMissing}`)) {
+      notified.add(`theme:${themeMissing}`)
+      vscode.window.showWarningMessage(`Open with Slidev: 프런트매터의 theme '${themeMissing}' 가 프로젝트에 설치돼 있지 않고 내장 목록에도 없습니다. Slidev 가 터미널에서 npm 설치 여부를 묻고, npm 에 그 패키지가 없으면 실패합니다. 내장 테마 이름(jussam, hossam, terminal …)을 쓰면 바로 됩니다.`)
+    }
 
     const terminal = vscode.window.createTerminal({ name: `Slidev: ${path.basename(file)}`, cwd: root })
     sessions.set(file, { terminal, port, url })
@@ -311,8 +343,13 @@ function activate(context) {
     log.push(`[Open with Slidev] 포트 ${port} 사용`)
     if (themeArg) log.push(`[Open with Slidev] 테마: ${themeArg}`)
     log.push(`[Open with Slidev] 서버를 시작합니다. 브라우저는 ${url} 이 응답하면 자동으로 열립니다…`)
-    terminal.sendText(log.map(l => `echo "${l.replace(/"/g, '\\"')}"`).join(' && '))
-    terminal.sendText(`${command} ${flags.join(' ')}`)
+    // 서버가 뜨기 전에 명령이 끝나면(테마 설치 실패, 문법 오류 …) 3분을 기다리지 않고 바로 알린다.
+    // 셸 통합이 켜진 터미널에서만 감지되고(VS Code 1.93+), 아니면 아래 대기 시간 초과로 넘어간다.
+    // 셸 통합은 sendText 로 보낸 명령의 글자를 알려 주지 않으므로(빈 명령줄), 진행 메시지 echo 와 실행 명령을 한 줄로 보내
+    // '명령 끝' 이벤트가 정확히 한 번, 실행 명령이 끝날 때 오게 한다. 구분자 ; 는 bash·zsh·PowerShell 5/7 모두에서 된다.
+    let ended = null   // { exitCode }
+    const endSub = vscode.window.onDidEndTerminalShellExecution?.(e => { if (e.terminal === terminal && !ended) ended = { exitCode: e.exitCode } })
+    terminal.sendText([...log.map(l => `echo "${l.replace(/"/g, '\\"')}"`), `${command} ${flags.join(' ')}`].join('; '))
 
     // 로딩 알림: 경과 시간을 1초마다 갱신하고, 취소하면 터미널을 닫는다
     const phase = localSlidev ? 'Slidev 서버 시작 중' : 'Slidev 내려받고 서버 시작 중 (처음 한 번)'
@@ -322,8 +359,17 @@ function activate(context) {
         const t0 = Date.now()
         const tickMsg = () => progress.report({ message: `${phase} · 포트 ${port} · ${Math.round((Date.now() - t0) / 1000)}초` })
         tickMsg(); const timer = setInterval(tickMsg, 1000)
-        return waitForServer(url, 180000, () => token.isCancellationRequested).finally(() => clearInterval(timer))
+        return waitForServer(url, 180000, () => token.isCancellationRequested || ended !== null).finally(() => clearInterval(timer))
       })
+    endSub?.dispose()
+    if (ended) {   // 터미널은 오류 출력을 볼 수 있게 남겨 둔다
+      sessions.delete(file)
+      const hint = themeMissing
+        ? ` 프런트매터의 theme '${themeMissing}' 를 npm 에서 찾지 못해 실패했을 수 있습니다. 내장 테마 이름(jussam, hossam, terminal …)을 쓰거나 프로젝트에 그 패키지를 설치하세요.`
+        : ''
+      vscode.window.showErrorMessage(`Open with Slidev: Slidev 가 서버를 띄우지 못하고 종료됐습니다(종료 코드 ${ended.exitCode ?? '알 수 없음'}). 터미널 출력을 확인하세요.${hint}`)
+      return
+    }
     if (up === 'cancelled') { terminal.dispose(); sessions.delete(file); return }
     if (!up) { vscode.window.showWarningMessage(`Open with Slidev: ${url} 이 3분 안에 응답하지 않습니다. 터미널 출력을 확인하세요.`); return }
     if (previewIn === 'vscode') await vscode.commands.executeCommand('simpleBrowser.show', url, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false })
