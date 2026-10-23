@@ -285,13 +285,15 @@ function activate(context) {
     const previewIn = c.get('previewIn', 'browser')
     const existing = sessions.get(file)
     if (existing && existing.terminal.exitStatus === undefined) {
-      if (c.get('onRerun', 'focus') === 'restart') {
-        existing.terminal.dispose(); sessions.delete(file)
-      } else {
+      // 서버가 실제로 응답하는지 먼저 확인한다. 응답하면(살아 있음) 그 터미널·탭을 보여 주고,
+      // 죽어 있으면(이전 실행이 실패해 셸만 남은 경우) 그 터미널을 닫고 아래에서 새로 띄운다 — 재실행이 막히지 않게.
+      const alive = (await waitForServer(existing.url, 1500)) === true
+      if (alive && c.get('onRerun', 'focus') !== 'restart') {
         existing.terminal.show(previewIn === 'vscode')
         if (previewIn === 'vscode') await vscode.commands.executeCommand('simpleBrowser.show', existing.url, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false })
         return
       }
+      existing.terminal.dispose(); sessions.delete(file)
     }
 
     const startPort = Number(c.get('port', 3030)) || 3030
@@ -312,17 +314,25 @@ function activate(context) {
     const fm = frontmatterTheme(text)
     let themeArg = ''
     let themeMissing = ''   // 프런트매터 테마가 프로젝트에도 내장 목록에도 없을 때 그 이름: Slidev 가 npm 설치를 묻고, 패키지가 없으면 실패한다
+    let bundledFailed = ''  // 내장 테마(hossam·jussam) 준비에 실패한 경우 그 이름: npm 에 그런 패키지가 없어 그냥 띄우면 404 가 난다
     if (fm) {
       if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
         const entry = catalogEntry(fm)
-        if (entry) themeArg = (await ensureTheme(entry)) || ''
-        else themeMissing = fm
+        if (entry) {
+          themeArg = (await ensureTheme(entry)) || ''
+          if (!themeArg && entry.bundled) bundledFailed = entry.name   // 내장 테마인데 준비 실패 → 아래에서 실행을 멈춘다
+        } else themeMissing = fm
       }
     } else {
       const custom = (c.get('defaultThemePath') || '').trim()
       const sel = c.get('defaultTheme', '')
       if (custom) themeArg = resolveTheme(custom, root)
       else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
+    }
+    if (bundledFailed) {   // 내장 테마 준비 실패: 이대로 띄우면 Slidev 가 npm 에서 못 찾아 404 로 죽는다. 멈추고 알린다.
+      sessions.delete(file)
+      vscode.window.showErrorMessage(`Open with Slidev: 내장 테마 '${bundledFailed}' 를 준비하지 못해 실행을 멈췄습니다. 잠시 후 다시 시도하거나, 창을 새로고침(Developer: Reload Window)한 뒤 실행하세요.`)
+      return
     }
     if (themeArg) flags.push(`--theme "${themeArg}"`)
     const extra = (c.get('extraArgs') || '').trim()

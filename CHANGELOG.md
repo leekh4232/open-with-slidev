@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+- 같은 파일을 다시 열 때 서버가 실제로 응답하는지 확인: 이전 실행이 실패해 터미널만 남아 있으면 그 터미널을 닫고 새로 띄운다 (재가동이 막히던 문제)
+- 내장 테마(hossam·jussam) 준비에 실패하면 실행을 멈추고 안내한다 (전에는 그대로 띄워 Slidev 가 npm 에서 테마를 못 찾아 404 로 죽었다)
+- 패키지에서 *.nb.md 제외
+
 ## 0.3.1
 - 테마 매뉴얼(jussam·hossam 사용법, 컴포넌트 프롭, 예제 코드, 화면)을 docs/ 에 추가하고 GitHub Pages 로 게시. README 에 URL 정리
 - 예제 덱 docs/examples/jussam-example.md(가상 수치)·hossam-example.md. 강의 덱 샘플은 저장소에서 제거
