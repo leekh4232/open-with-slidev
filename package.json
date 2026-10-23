@@ -2,7 +2,7 @@
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
   "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없어도 되고, 내장 테마 34종을 이름만으로 쓸 수 있다.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "leekh",
   "license": "MIT",
   "icon": "icon.png",
