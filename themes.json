@@ -1,21 +1,5 @@
 [
   {
-    "id": "jussam",
-    "pkg": "slidev-theme-jussam",
-    "name": "Jussam",
-    "description": "특강·발표용 다크 테마: 검정 바탕, 메시 그라디언트 표지, 파트별 시그니처 색, 카드·스탯·차트 상자",
-    "source": "builtin",
-    "repo": "jussam"
-  },
-  {
-    "id": "hossam",
-    "pkg": "slidev-theme-hossam",
-    "name": "Hossam",
-    "description": "파이썬 기초 과정 테마: 흰 바탕, 왼쪽 목차 사이드바(폭 조절·접기·확대/축소), 콜아웃·프롬프트·출력 상자",
-    "source": "builtin",
-    "repo": "hossam"
-  },
-  {
     "id": "default",
     "pkg": "@slidev/theme-default",
     "name": "Default",

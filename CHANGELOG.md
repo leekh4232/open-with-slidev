@@ -4,6 +4,16 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.5.0] - 2026-10-26
+
+### 변경
+- **프런트매터의 `theme`가 경로면(`theme: ./slidev-themes/hossam`) 그 폴더를 그대로 씁니다.** 강의 · 발표용 hossam 테마는 [slidev-themes](https://github.com/leekh4232/slidev-themes) 저장소를 받아 이렇게 적습니다. 테마 폴더를 고치면 다시 열 때 바로 반영됩니다.
+- `openWithSlidev.defaultTheme` 기본값이 `jussam`에서 `""`(지정 안 함, Slidev 기본 동작)으로 바뀌었습니다.
+- 프런트매터에 `theme: hossam`이나 `theme: jussam`처럼 이름만 적으면, 저장소를 받아 경로로 적으라는 안내를 띄웁니다.
+
+### 제거
+- 내장 목록에서 jussam · hossam을 뺐습니다(34종 → 32종). 확장이 GitHub 테마 저장소를 내려받아 캐시(`themes/repo`)에 두던 동작도 없앴습니다.
+
 ## [0.4.0] - 2026-10-26
 
 ### 변경

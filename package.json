@@ -1,7 +1,7 @@
 {
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
-  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없어도 되고, 내장 테마 34종을 이름만으로 쓸 수 있다.",
+  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없어도 되고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다.",
   "version": "0.4.0",
   "publisher": "leekh",
   "license": "MIT",
@@ -106,10 +106,8 @@
         },
         "openWithSlidev.defaultTheme": {
           "type": "string",
-          "default": "jussam",
+          "default": "",
           "enum": [
-            "jussam",
-            "hossam",
             "",
             "default",
             "seriph",
@@ -145,8 +143,6 @@
             "legible"
           ],
           "enumDescriptions": [
-            "[전용] Jussam — 특강·발표용 다크 테마: 검정 바탕, 메시 그라디언트 표지, 파트별 시그니처 색, 카드·스탯·차트 상자",
-            "[전용] Hossam — 파이썬 기초 과정 테마: 흰 바탕, 왼쪽 목차 사이드바(폭 조절·접기·확대/축소), 콜아웃·프롬프트·출력 상자",
             "지정 안 함 (Slidev 기본 동작)",
             "[공식] Default — Slidev 기본 테마. 미니멀, 라이트/다크",
             "[공식] Seriph — 세리프 글꼴의 격식 있는 테마",
@@ -181,7 +177,7 @@
             "[추천] Zhibai — 종이·먹 느낌의 편집 디자인, 프리셋 5종",
             "[추천] Legible — 슬라이드당 주장 하나(Assertion-Evidence), 큰 글씨"
           ],
-          "description": "md 프런트매터에 theme 가 없을 때 쓸 테마. 기본 jussam. 처음 쓸 때 내려받아 캐시에 둔다(jussam·hossam 은 테마 저장소 github.com/leekh4232/slidev-themes, 나머지는 npm). 프런트매터의 theme 가 우선"
+          "description": "md 프런트매터에 theme 가 없을 때 쓸 테마. 기본은 지정 안 함(Slidev 기본 동작). 처음 쓸 때 npm 에서 내려받아 캐시에 둔다. 프런트매터의 theme 가 우선"
         },
         "openWithSlidev.defaultThemePath": {
           "type": "string",

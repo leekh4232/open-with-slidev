@@ -2,23 +2,20 @@
 // 동작: md 파일 폴더에서 위로 올라가며 Slidev 가 설치된 프로젝트(node_modules/.bin/slidev 또는 package.json 의 @slidev/cli)를 찾고
 //       (projectRoot 설정이 있으면 그 폴더), 빈 포트를 골라 그 폴더의 터미널에서 `npx slidev <상대경로> --port N …` 을 실행한다.
 //       Slidev 가 설치된 곳이 없으면 npx 가 @slidev/cli 와 기본 테마를 내려받아 실행한다 (설치 없이 동작).
-//       내장 테마(themes.json): 프런트매터 theme 이름이나 defaultTheme 설정이 목록에 있으면 캐시 폴더에 내려받아 --theme 절대 경로로 넘긴다.
-//       jussam·hossam 은 테마 저장소(github.com/leekh4232/slidev-themes)에서, 나머지는 npm 에서 받는다.
+//       내장 테마(themes.json): 프런트매터 theme 이름이나 defaultTheme 설정이 목록에 있으면 캐시 폴더에 npm 으로 내려받아 --theme 절대 경로로 넘긴다.
+//       프런트매터 theme 가 경로(./hossam 등)면 손대지 않고 Slidev 가 그대로 읽는다.
 //       서버가 응답하면 설정에 따라 외부 브라우저(--open) 또는 VS Code Simple Browser 에 띄우고, 발표자 모드도 열 수 있다.
 //       파일마다 터미널 하나를 쓴다. 설정 목록은 package.json 의 contributes.configuration.
 const path = require('path')
 const fs = require('fs')
 const net = require('net')
 const http = require('http')
-const https = require('https')
-const { exec, execFile } = require('child_process')
+const { exec } = require('child_process')
 
 // 내장 테마 카탈로그 (themes.json): 공식 갤러리 + 추천. 이름만으로 쓸 수 있고, 처음 쓸 때 캐시 폴더에 npm 으로 내려받는다.
 const CATALOG = require('./themes.json')
 const BY_ID = new Map(CATALOG.map(t => [t.id, t]))
 const BY_PKG = new Map(CATALOG.map(t => [t.pkg, t]))
-// 전용 테마(themes.json 의 repo 항목: jussam·hossam)가 있는 저장소. main 브랜치를 내려받아 쓴다.
-const THEMES_REPO = 'leekh4232/slidev-themes'
 
 // ---------- vscode 없이도 쓰는 순수 함수 (node 로 테스트 가능) ----------
 function hasSlidevDep(dir) {
@@ -120,79 +117,6 @@ function npmInstall(cacheDir, pkgs) {
   })
 }
 
-// ---------- 전용 테마 저장소 (globalStorage/themes/repo): GitHub 에서 main 을 내려받아 풀어 둔다 ----------
-function httpsGet(url, headers = {}, redirects = 5) {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'open-with-slidev', ...headers }, timeout: 20000 }, res => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects > 0) {
-        res.resume()
-        resolve(httpsGet(new URL(res.headers.location, url).toString(), headers, redirects - 1))
-        return
-      }
-      if (res.statusCode !== 200) { res.resume(); reject(new Error(`HTTP ${res.statusCode} (${url})`)); return }
-      const chunks = []
-      res.on('data', c => chunks.push(c))
-      res.on('end', () => resolve(Buffer.concat(chunks)))
-      res.on('error', reject)
-    })
-    req.on('timeout', () => req.destroy(new Error(`시간 초과 (${url})`)))
-    req.on('error', reject)
-  })
-}
-/** main 브랜치의 최신 커밋 해시. */
-async function latestThemesSha(repo = THEMES_REPO) {
-  const sha = (await httpsGet(`https://api.github.com/repos/${repo}/commits/main`, { Accept: 'application/vnd.github.sha' })).toString().trim()
-  if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error(`커밋 해시를 읽지 못했습니다: ${sha.slice(0, 80)}`)
-  return sha
-}
-/** 캐시에 풀어 둔 저장소의 커밋 해시 (없으면 ''). */
-function repoSha(cacheDir) {
-  try { return fs.readFileSync(path.join(cacheDir, 'repo', '.repo-sha'), 'utf8').trim() } catch { return '' }
-}
-/** 저장소를 sha 시점으로 내려받아 cacheDir/repo 에 둔다. 임시 폴더에 다 푼 뒤 바꿔 끼우므로, 실패해도 이전 것이 남는다. tar 는 macOS·Linux·Windows 10+ 에 기본으로 있다. */
-async function downloadThemesRepo(cacheDir, sha, repo = THEMES_REPO) {
-  cacheInit(cacheDir)
-  const tgz = await httpsGet(`https://codeload.github.com/${repo}/tar.gz/${sha}`)
-  const work = fs.mkdtempSync(path.join(cacheDir, 'repo-'))
-  try {
-    const file = path.join(work, 'repo.tar.gz')
-    fs.writeFileSync(file, tgz)
-    await new Promise((resolve, reject) => execFile('tar', ['-xzf', 'repo.tar.gz'], { cwd: work }, err => err ? reject(err) : resolve()))
-    const top = fs.readdirSync(work).find(n => fs.statSync(path.join(work, n)).isDirectory())
-    if (!top) throw new Error('내려받은 압축 파일이 비어 있습니다')
-    fs.writeFileSync(path.join(work, top, '.repo-sha'), sha)
-    const dest = path.join(cacheDir, 'repo')
-    fs.rmSync(dest, { recursive: true, force: true })
-    fs.renameSync(path.join(work, top), dest)
-    return dest
-  } finally {
-    fs.rmSync(work, { recursive: true, force: true })
-  }
-}
-/** 전용 테마(entry.repo)를 준비하고 그 폴더 경로를 돌려준다.
- *  세션(state)마다 처음 한 번 최신 커밋을 확인해 바뀌었으면 다시 받는다. 확인이 안 되면(오프라인) 캐시에 있는 것을 쓰고, 캐시도 없으면 실패한다.
- *  테마가 @slidev/theme-default 의 스타일을 가져오므로 그 패키지는 캐시 node_modules 에 둔다. */
-async function ensureRepoTheme(cacheDir, entry, state = {}) {
-  if (!state.check) {
-    state.check = (async () => {
-      try {
-        const sha = await latestThemesSha()
-        if (sha !== repoSha(cacheDir)) await downloadThemesRepo(cacheDir, sha)
-      } catch (e) {
-        if (!repoSha(cacheDir)) { state.check = null; throw new Error(`테마 저장소(github.com/${THEMES_REPO})를 내려받지 못했습니다. ${e.message}`) }
-      }
-    })()
-  }
-  await state.check
-  const dir = path.join(cacheDir, 'repo', entry.repo)
-  if (!fs.existsSync(path.join(dir, 'package.json'))) throw new Error(`테마 저장소에 '${entry.repo}' 폴더가 없습니다`)
-  if (!cachedThemePath(cacheDir, '@slidev/theme-default')) await npmInstall(cacheDir, ['@slidev/theme-default'])
-  return dir
-}
-function repoThemeCached(cacheDir, entry) {
-  return fs.existsSync(path.join(cacheDir, 'repo', entry.repo, 'package.json'))
-}
-
 /** defaultTheme 설정값 → 폴더가 실제로 있으면 절대 경로, 아니면 테마 이름 그대로. */
 function resolveTheme(value, root) {
   const v = (value || '').trim()
@@ -261,14 +185,7 @@ function activate(context) {
 
   const cacheDir = path.join(context.globalStorageUri.fsPath, 'themes')
   /** 카탈로그 테마를 캐시에 준비하고 그 경로를 돌려준다. 실패하면 null (안내 메시지 표시). */
-  const repoState = {}   // 테마 저장소 최신 확인은 세션마다 한 번
   const ensureTheme = async (entry) => {
-    if (entry.repo) {   // 전용 테마 (jussam·hossam): 테마 저장소에서
-      try {
-        return await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: `Slidev 테마 '${entry.name}' 확인 중…` },
-          () => ensureRepoTheme(cacheDir, entry, repoState))
-      } catch (e) { vscode.window.showErrorMessage(`Open with Slidev: 테마 '${entry.name}' 준비 실패. ${e.message}`); return null }
-    }
     const have = cachedThemePath(cacheDir, entry.pkg)
     if (have) return have
     try {
@@ -282,23 +199,15 @@ function activate(context) {
   }
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.downloadThemes', async () => {
     const picks = await vscode.window.showQuickPick(
-      CATALOG.map(t => ({ label: t.name, description: t.id, detail: t.description, picked: t.repo ? repoThemeCached(cacheDir, t) : Boolean(cachedThemePath(cacheDir, t.pkg)), entry: t })),
+      CATALOG.map(t => ({ label: t.name, description: t.id, detail: t.description, picked: Boolean(cachedThemePath(cacheDir, t.pkg)), entry: t })),
       { canPickMany: true, title: '미리 내려받을 Slidev 테마 (이미 받은 것은 체크됨)', placeHolder: '여러 개 선택 가능' })
     if (!picks) return
-    // 전용 테마는 고르면 항상 최신으로 다시 확인하고, npm 테마는 아직 없는 것만 받는다.
-    const repoTodo = picks.map(p => p.entry).filter(t => t.repo)
-    const npmTodo = picks.map(p => p.entry).filter(t => !t.repo && !cachedThemePath(cacheDir, t.pkg))
-    const todo = [...repoTodo, ...npmTodo]
+    // 아직 받지 않은 것만 받는다.
+    const todo = picks.map(p => p.entry).filter(t => !cachedThemePath(cacheDir, t.pkg))
     if (!todo.length) { vscode.window.showInformationMessage('선택한 테마는 모두 이미 내려받았습니다.'); return }
     try {
       await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `Slidev 테마 ${todo.length}개 내려받는 중…` },
-        async () => {
-          if (repoTodo.length) {
-            repoState.check = null
-            for (const t of repoTodo) await ensureRepoTheme(cacheDir, t, repoState)
-          }
-          if (npmTodo.length) await npmInstall(cacheDir, npmTodo.map(t => t.pkg))
-        })
+        () => npmInstall(cacheDir, todo.map(t => t.pkg)))
       vscode.window.showInformationMessage(`테마 ${todo.map(t => t.name).join(', ')} 준비 완료 (${cacheDir})`)
     } catch (e) { vscode.window.showErrorMessage(`테마 설치 실패: ${e.message}`) }
   }))
@@ -388,14 +297,11 @@ function activate(context) {
     const fm = frontmatterTheme(text)
     let themeArg = ''
     let themeMissing = ''   // 프런트매터 테마가 프로젝트에도 내장 목록에도 없을 때 그 이름: Slidev 가 npm 설치를 묻고, 패키지가 없으면 실패한다
-    let repoThemeFailed = ''  // 전용 테마(hossam·jussam) 준비에 실패한 경우 그 이름: npm 에 그런 패키지가 없어 그냥 띄우면 404 가 난다
     if (fm) {
       if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
         const entry = catalogEntry(fm)
-        if (entry) {
-          themeArg = (await ensureTheme(entry)) || ''
-          if (!themeArg && entry.repo) repoThemeFailed = entry.name   // 전용 테마인데 준비 실패 → 아래에서 실행을 멈춘다
-        } else themeMissing = fm
+        if (entry) themeArg = (await ensureTheme(entry)) || ''
+        else themeMissing = fm
       }
     } else {
       const custom = (c.get('defaultThemePath') || '').trim()
@@ -403,17 +309,16 @@ function activate(context) {
       if (custom) themeArg = resolveTheme(custom, root)
       else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
     }
-    if (repoThemeFailed) {   // 전용 테마 준비 실패: 이대로 띄우면 Slidev 가 npm 에서 못 찾아 404 로 죽는다. 멈추고 알린다.
-      sessions.delete(file)
-      vscode.window.showErrorMessage(`Open with Slidev: 테마 '${repoThemeFailed}' 를 테마 저장소(github.com/leekh4232/slidev-themes)에서 받지 못해 실행을 멈췄습니다. 처음 한 번은 인터넷 연결이 필요합니다. 연결을 확인하고 다시 실행하세요.`)
-      return
-    }
     if (themeArg) flags.push(`--theme "${themeArg}"`)
     const extra = (c.get('extraArgs') || '').trim()
     if (extra) flags.push(extra)
+    // hossam(옛 jussam 포함)은 npm 에 없는 테마라 저장소를 받아 경로로 적어야 한다
+    const pathHint = /^(hossam|jussam)$/.test(themeMissing)
+      ? ` hossam 테마는 github.com/leekh4232/slidev-themes 를 받은 뒤 theme: ./slidev-themes/hossam 처럼 경로로 적으세요.`
+      : ' 내장 테마 이름(seriph, terminal …)을 쓰면 바로 됩니다.'
     if (themeMissing && !notified.has(`theme:${themeMissing}`)) {
       notified.add(`theme:${themeMissing}`)
-      vscode.window.showWarningMessage(`Open with Slidev: 프런트매터의 theme '${themeMissing}' 가 프로젝트에 설치돼 있지 않고 내장 목록에도 없습니다. Slidev 가 터미널에서 npm 설치 여부를 묻고, npm 에 그 패키지가 없으면 실패합니다. 내장 테마 이름(jussam, hossam, terminal …)을 쓰면 바로 됩니다.`)
+      vscode.window.showWarningMessage(`Open with Slidev: 프런트매터의 theme '${themeMissing}' 가 프로젝트에 설치돼 있지 않고 내장 목록에도 없습니다. Slidev 가 터미널에서 npm 설치 여부를 묻고, npm 에 그 패키지가 없으면 실패합니다.${pathHint}`)
     }
 
     const terminal = vscode.window.createTerminal({ name: `Slidev: ${path.basename(file)}`, cwd: root })
@@ -449,7 +354,7 @@ function activate(context) {
     if (ended) {   // 터미널은 오류 출력을 볼 수 있게 남겨 둔다
       sessions.delete(file)
       const hint = themeMissing
-        ? ` 프런트매터의 theme '${themeMissing}' 를 npm 에서 찾지 못해 실패했을 수 있습니다. 내장 테마 이름(jussam, hossam, terminal …)을 쓰거나 프로젝트에 그 패키지를 설치하세요.`
+        ? ` 프런트매터의 theme '${themeMissing}' 를 npm 에서 찾지 못해 실패했을 수 있습니다.${pathHint}`
         : ''
       vscode.window.showErrorMessage(`Open with Slidev: Slidev 가 서버를 띄우지 못하고 종료됐습니다(종료 코드 ${ended.exitCode ?? '알 수 없음'}). 터미널 출력을 확인하세요.${hint}`)
       return
@@ -473,4 +378,4 @@ function activate(context) {
 
 function deactivate() { for (const s of sessions.values()) s.terminal.dispose(); sessions.clear() }
 
-module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, waitForServer, cacheInit, cachedThemePath, npmInstall, latestThemesSha, downloadThemesRepo, ensureRepoTheme, repoThemeCached, CATALOG }
+module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, waitForServer, cacheInit, cachedThemePath, npmInstall, CATALOG }
