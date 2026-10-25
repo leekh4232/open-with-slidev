@@ -4,7 +4,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
-## [미배포]
+## [0.4.0] - 2026-10-26
 
 ### 변경
 - **전용 테마 jussam · hossam을 테마 저장소 [slidev-themes](https://github.com/leekh4232/slidev-themes)에서 받습니다.** 처음 쓸 때 저장소를 내려받아 캐시(`globalStorage/…/themes/repo`)에 두고, VS Code를 켠 뒤 처음 실행할 때 새 커밋이 있으면 갱신합니다. 인터넷에 연결되지 않으면 받아 둔 것을 씁니다. 테마를 고쳐도 확장을 다시 배포할 필요가 없습니다.
