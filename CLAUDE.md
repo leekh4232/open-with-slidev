@@ -2,7 +2,7 @@
 
 VS Code 확장 **Open with Slidev**(`leekh.open-with-slidev`) 저장소입니다. md 파일을 우클릭해 Slidev 개발 서버로 띄웁니다. 빌드 도구 없이 순수 JavaScript `extension.js` 하나로 동작하며, 테마 목록은 `themes.json`에 있습니다.
 
-전용 테마 `jussam` · `hossam`은 이 저장소에 없습니다. 별도 저장소 **slidev-themes**(`/Users/leekh/slidev-themes`, `git@github.com:leekh4232/slidev-themes.git`)에 있고, 확장이 실행 중에 그 저장소의 `main`을 내려받아 씁니다(`ensureRepoTheme`). 나머지 테마는 npm에서 받습니다.
+전용 테마 `jussam` · `hossam`은 이 저장소에 없습니다. 별도 저장소 **slidev-themes**(`/Users/leekh/slidev-themes`, `git@github.com:leekh4232/slidev-themes.git`, 소개 페이지 https://slidev-themes.hossam.kr 는 그 저장소의 `docs/index.html`)에 있고, 확장이 실행 중에 그 저장소의 `main`을 내려받아 씁니다(`ensureRepoTheme`). 나머지 테마는 npm에서 받습니다.
 
 응답과 문서는 한글로 씁니다. 코드, 커밋 메시지, 설정 이름은 원래 언어를 유지합니다.
 

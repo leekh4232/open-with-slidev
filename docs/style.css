@@ -85,6 +85,9 @@ figcaption { font-size: 0.86rem; color: var(--muted); margin-top: 8px; }
 .btn { display: inline-flex; align-items: center; padding: 11px 18px; border-radius: 11px; font-weight: 700; color: var(--fg); border: 1px solid var(--line); background: var(--surface); text-decoration: none !important; }
 .btn:hover { border-color: var(--muted); }
 .btn.primary { background: linear-gradient(135deg, #5fc9f8, #7c5cff 55%, #ff3d9a); color: #fff; border: 0; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 20px; }
+.badges img { height: 20px; display: block; }
+.badges a { line-height: 0; }
 .showcase { margin-top: 32px; }
 .features { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .features li { display: flex; gap: 14px; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }

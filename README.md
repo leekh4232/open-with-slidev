@@ -1,8 +1,16 @@
 # Open with Slidev
 
-마크다운 파일을 우클릭하고 **Open with Slidev** 를 누르면 그 파일이 [Slidev](https://sli.dev) 슬라이드로 열립니다. 터미널을 열고, 프로젝트 폴더로 이동하고, 명령을 입력하는 과정이 메뉴 하나로 줄어듭니다.
+[![Marketplace](https://vsmarketplacebadges.dev/version-short/leekh.open-with-slidev.svg?label=Marketplace&color=0066b8)](https://marketplace.visualstudio.com/items?itemName=leekh.open-with-slidev)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/leekh.open-with-slidev.svg?color=0066b8)](https://marketplace.visualstudio.com/items?itemName=leekh.open-with-slidev)
+[![Release](https://img.shields.io/github/v/release/leekh4232/open-with-slidev?label=release&color=7c5cff)](https://github.com/leekh4232/open-with-slidev/releases)
+![VS Code ^1.80](https://img.shields.io/badge/VS%20Code-%5E1.80-007ACC)
+![Node.js ≥ 18](https://img.shields.io/badge/Node.js-%E2%89%A5%2018-339933)
+[![Slidev themes 34](https://img.shields.io/badge/Slidev-themes%2034-2b90b6)](https://sli.dev)
+[![License MIT](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
 
 🌐 **소개 페이지 · [open-with-slidev.hossam.kr](https://open-with-slidev.hossam.kr/)**
+
+마크다운 파일을 우클릭하고 **Open with Slidev** 를 누르면 그 파일이 [Slidev](https://sli.dev) 슬라이드로 열립니다. 터미널을 열고, 프로젝트 폴더로 이동하고, 명령을 입력하는 과정이 메뉴 하나로 줄어듭니다.
 
 ## 할 수 있는 것
 
