@@ -1,4 +1,16 @@
-# Changelog
+# 변경 이력
+
+이 프로젝트의 주요 변경 사항을 기록합니다.
+
+형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
+
+## [미배포]
+
+### 변경
+- **전용 테마 jussam · hossam을 테마 저장소 [slidev-themes](https://github.com/leekh4232/slidev-themes)에서 받습니다.** 처음 쓸 때 저장소를 내려받아 캐시(`globalStorage/…/themes/repo`)에 두고, VS Code를 켠 뒤 처음 실행할 때 새 커밋이 있으면 갱신합니다. 인터넷에 연결되지 않으면 받아 둔 것을 씁니다. 테마를 고쳐도 확장을 다시 배포할 필요가 없습니다.
+- **Slidev: 내장 테마 미리 내려받기** 명령에 jussam · hossam도 나옵니다. 고르면 저장소의 최신 테마로 다시 받습니다.
+- 소개 페이지 https://open-with-slidev.hossam.kr 를 열었습니다. 확장 소개 아래에 테마 매뉴얼(개요 · jussam · hossam)을 두고, 왼쪽에 고정 사이드바 메뉴를 붙였습니다. 다크 테마입니다.
+- 확장 패키지가 테마 파일만큼 작아졌습니다.
 
 ## 0.3.2
 - 같은 파일을 다시 열 때 서버가 실제로 응답하는지 확인: 이전 실행이 실패해 터미널만 남아 있으면 그 터미널을 닫고 새로 띄운다 (재가동이 막히던 문제)
