@@ -60,15 +60,14 @@ Node.js 18 이상만 있으면 됩니다. **프로젝트에 Slidev를 설치하�
 
 ## 테마 매뉴얼
 
-두 전용 테마의 사용법(레이아웃·컴포넌트·프런트매터·주의할 점)과 예제 코드는 소개 페이지의 하위 페이지에 있습니다. 저장소의 `docs/` 폴더가 그대로 게시됩니다.
+두 전용 테마의 사용법(레이아웃 · 컴포넌트 · 프런트매터 · 주의할 점)과 예제 덱은 테마 사이트에 있습니다.
 
 | 문서 | URL |
 |---|---|
-| 소개 페이지 | https://open-with-slidev.hossam.kr/ |
-| 테마 매뉴얼 | https://open-with-slidev.hossam.kr/themes.html |
-| jussam 테마 (특강·발표용 다크) | https://open-with-slidev.hossam.kr/jussam.html |
-| hossam 테마 (강의용 라이트, 목차 사이드바) | https://open-with-slidev.hossam.kr/hossam.html |
-| 예제 덱 | [docs/examples/jussam-example.md](docs/examples/jussam-example.md) · [docs/examples/hossam-example.md](docs/examples/hossam-example.md) |
+| Slidev Themes (테마 사이트) | https://slidev-themes.hossam.kr/ |
+| jussam 테마 (특강 · 발표용 다크) | https://slidev-themes.hossam.kr/jussam.html |
+| hossam 테마 (강의용 라이트, 목차 사이드바) | https://slidev-themes.hossam.kr/hossam.html |
+| 예제 덱 | [jussam-example.md](https://github.com/leekh4232/slidev-themes/blob/main/docs/examples/jussam-example.md) · [hossam-example.md](https://github.com/leekh4232/slidev-themes/blob/main/docs/examples/hossam-example.md) |
 
 ## 설정
 
@@ -119,7 +118,7 @@ code --install-extension open-with-slidev-<버전>.vsix
 
 ## 개발
 
-빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `themes.json`(내장 테마 목록), `docs/`(소개 페이지 · 테마 매뉴얼 · 예제 덱, GitHub Pages로 게시)입니다. `jussam`·`hossam` 테마는 [slidev-themes](https://github.com/leekh4232/slidev-themes) 저장소에서 고칩니다. 그 저장소에 push하면 확장을 다시 배포하지 않아도 사용자가 다음 실행 때 새 테마를 받습니다.
+빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `themes.json`(내장 테마 목록), `docs/`(소개 페이지, GitHub Pages로 게시)입니다. `jussam`·`hossam` 테마는 [slidev-themes](https://github.com/leekh4232/slidev-themes) 저장소에서 고칩니다. 그 저장소에 push하면 확장을 다시 배포하지 않아도 사용자가 다음 실행 때 새 테마를 받습니다.
 
 ```bash
 npm install                                   # 패키징 도구(@vscode/vsce) 설치

@@ -23,19 +23,15 @@ VS Code 확장 **Open with Slidev**(`leekh.open-with-slidev`) 저장소입니다
 
 | 파일 | 내용 |
 |:--|:--|
-| `README.md` | Marketplace와 GitHub에 보이는 설명. 할 수 있는 것, 사용법, 테마 목록, 설정 표, 동작 순서 |
-| `docs/index.html` | 소개 페이지 https://open-with-slidev.hossam.kr (`docs/CNAME`). 확장이 하는 일만 짧게 |
-| `docs/themes.html` | 테마 매뉴얼 개요와 빠른 시작, 예제 덱 링크 |
-| `docs/jussam.html` · `docs/hossam.html` | 전용 테마 매뉴얼 (레이아웃 · 컴포넌트 · 프롭 · 예제 코드 · 화면) |
-| `docs/style.css` | 네 페이지 공통 스타일 (다크 테마, 왼쪽 고정 사이드바) |
-| `docs/img/` · `docs/examples/` | 매뉴얼 화면 캡처와 예제 덱 |
+| `README.md` | Marketplace와 GitHub에 보이는 설명. 배지, 할 수 있는 것, 사용법, 테마 목록, 설정 표, 동작 순서 |
+| `docs/index.html` | 소개 페이지 https://open-with-slidev.hossam.kr (`docs/CNAME`). 한 페이지, 사이드바 없음, 다크 |
+| `docs/style.css` | 소개 페이지 스타일 |
 | `package.json` | 설정 설명 · 드롭다운 설명(`enumDescriptions`) · 명령 이름 |
 | `themes.json` | 테마 목록. 드롭다운(`defaultTheme`의 `enum`)과 같은 순서 · 같은 항목을 유지 |
 
 - **제거된 기능은 "제거됨"이라고 쓰지 않고 아예 언급하지 않습니다.** 문서에서 그 기능에 대한 문장, 표 행, 그림 설명을 지웁니다. 제거 기록은 CHANGELOG에만 남깁니다.
-- 소개 페이지(`index.html`)는 **이 확장이 무슨 일을 하는지만** 짧게 씁니다. 설정 이름 · 기본값 · 내부 동작은 README에 둡니다. 기능 카드는 짝수 개(지금 6개)를 유지합니다.
-- **사이드바는 네 페이지에 같은 내용으로 복사되어 있습니다.** 페이지를 더하거나 빼면 네 파일의 `<aside class="sidebar">`를 모두 고칩니다. 지금 페이지의 `<a class="current">` 아래 `<ul class="subnav">`는 그 페이지의 `<h2 id>` 목록과 같아야 하니, `h2`를 더하거나 바꾸면 사이드바도 맞춥니다.
-- slidev-themes에서 테마의 레이아웃 · 컴포넌트 · 프롭이 바뀌면 `docs/jussam.html` · `docs/hossam.html`과 예제 덱도 함께 고칩니다.
+- 소개 페이지(`index.html`)는 **이 확장이 무슨 일을 하는지만** 짧게 씁니다. 설정 이름 · 기본값 · 내부 동작은 README에 둡니다. 기능 카드는 짝수 개(지금 6개)를 유지합니다. Marketplace · GitHub · 테마 사이트 링크는 페이지 본문(버튼 · 배지 · 바닥글)에 넣습니다.
+- **테마 매뉴얼 · 화면 캡처 · 예제 덱은 이 저장소에 두지 않습니다.** slidev-themes 저장소의 `docs/`(https://slidev-themes.hossam.kr)에 있습니다. 소개 페이지의 테마 그림도 그 사이트의 `img/`를 가리킵니다.
 - 바꾼 뒤 예전 표현이 남았는지 검색합니다 (예: 제거한 설정 이름, 옛 주소).
 - `docs/**`, `*.html`, `CLAUDE.md`는 `.vscodeignore`로 VSIX에서 빠집니다.
 
@@ -51,7 +47,7 @@ code --install-extension open-with-slidev-local.vsix --force
 - 설치 뒤 VS Code에서 **Developer: Reload Window**를 실행해야 새 버전이 적용됩니다.
 - `.vsix`는 `.gitignore`에 있어 커밋되지 않습니다.
 - 바뀐 기능을 실제로 돌려 봅니다. 최소한 아래를 확인합니다.
-  - `docs/examples/jussam-example.md`와 `hossam-example.md`를 우클릭 → **Open with Slidev**로 열면 서버가 뜨고 테마가 맞게 나온다.
+  - slidev-themes 저장소의 `docs/examples/jussam-example.md`와 `hossam-example.md`를 우클릭 → **Open with Slidev**로 열면 서버가 뜨고 테마가 맞게 나온다.
   - 테마를 처음 받는 상황(캐시가 빈 상태)에서도 된다. 캐시는 `~/Library/Application Support/Code/User/globalStorage/leekh.open-with-slidev/themes`입니다.
   - 프런트매터에 npm 테마(예: `theme: seriph`)를 적은 덱도 열린다 (테마 처리를 건드렸다면 필수).
 - `extension.js`의 순수 함수는 `vscode` 없이 Node로 바로 시험할 수 있습니다. 예: `node -e "const e=require('./extension.js'); e.ensureRepoTheme('/tmp/c', e.CATALOG[0], {}).then(console.log)"`
