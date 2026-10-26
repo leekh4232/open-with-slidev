@@ -245,6 +245,7 @@ function activate(context) {
   }
 
   const cacheDir = path.join(context.globalStorageUri.fsPath, 'themes')    // 내장 테마 캐시
+  const launcher = path.join(context.extensionPath, 'launch.js')            // 터미널 실행기 (배너 출력 + Slidev 실행)
   const out = vscode.window.createOutputChannel('Open with Slidev')   // npm 설치 출력
   context.subscriptions.push(out)
   /** npm 설치를 돌리며 경과 시간과 받은 패키지 수를 알림에, npm 출력을 출력 창에 보여 준다. run(opts) 가 실제 설치. 취소하면 'cancelled' 로 던진다. */
@@ -430,6 +431,10 @@ function activate(context) {
       else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
     }
     if (themeArg) flags.push(`--theme "${themeArg}"`)
+    // 터미널 배너에 보여 줄 테마 설명
+    const themeLabel = fm
+      ? (themeArg ? `${fm}  ${'(built-in, cached)'}` : isPathLike(fm) ? `${fm}  (folder, from frontmatter)` : `${fm}  (from frontmatter)`)
+      : themeArg ? `${themeArg}  (from settings)` : 'default'
     const extra = (c.get('extraArgs') || '').trim()
     if (extra) flags.push(extra)
     // hossam(옛 jussam 포함)은 npm 에 없는 테마라 저장소를 받아 경로로 적어야 한다
@@ -444,21 +449,16 @@ function activate(context) {
     const terminal = vscode.window.createTerminal({ name: `Slidev: ${path.basename(file)}`, cwd: root })
     sessions.set(file, { terminal, port, url })
     terminal.show(previewIn === 'vscode')
-    // 진행 과정을 터미널에 남긴다 (서버가 뜬 뒤에는 보내지 않는다: Slidev 가 터미널 키 입력을 단축키로 받기 때문)
-    const log = []
-    log.push(`[Open with Slidev] 파일: ${rel}`)
-    log.push(`[Open with Slidev] 프로젝트 루트: ${root}`)
-    for (const b of busy) log.push(`[Open with Slidev] 포트 ${b} 사용 중 → ${b + 1} 시도`)
-    log.push(`[Open with Slidev] 포트 ${port} 사용`)
-    if (themeArg) log.push(`[Open with Slidev] 테마: ${themeArg}`)
-    log.push(`[Open with Slidev] 서버를 시작합니다. 브라우저는 ${url} 이 응답하면 자동으로 열립니다…`)
-    // 서버가 뜨기 전에 명령이 끝나면(테마 설치 실패, 문법 오류 …) 5분을 기다리지 않고 바로 알린다.
+    // 터미널에는 실행기(launch.js) 한 줄만 보낸다. 실행기가 색이 입혀진 영어 배너(파일·루트·포트·테마·명령)를 찍고 같은 터미널에서 Slidev 명령을 돌린다.
+    // 인자는 base64url JSON 이라 셸(bash·zsh·PowerShell·cmd)마다 다른 따옴표 규칙을 타지 않는다. 서버가 뜬 뒤에는 아무것도 보내지 않는다 (Slidev 가 키 입력을 단축키로 받는다).
+    const full = `${command} ${flags.join(' ')}`
+    const info = { file: rel, root, port, busy, url, theme: themeLabel, preview: previewIn === 'browser' ? 'browser (--open)' : 'VS Code Simple Browser', command: full }
+    const token = Buffer.from(JSON.stringify(info), 'utf8').toString('base64url')
+    // 서버가 뜨기 전에 명령이 끝나면(테마 설치 실패, 문법 오류 …) 5분을 기다리지 않고 바로 알린다. 실행기는 Slidev 의 종료 코드를 그대로 돌려준다.
     // 셸 통합이 켜진 터미널에서만 감지되고(VS Code 1.93+), 아니면 아래 대기 시간 초과로 넘어간다.
-    // 셸 통합은 sendText 로 보낸 명령의 글자를 알려 주지 않으므로(빈 명령줄), 진행 메시지 echo 와 실행 명령을 한 줄로 보내
-    // '명령 끝' 이벤트가 정확히 한 번, 실행 명령이 끝날 때 오게 한다. 구분자 ; 는 bash·zsh·PowerShell 5/7 모두에서 된다.
     let ended = null   // { exitCode }
     const endSub = vscode.window.onDidEndTerminalShellExecution?.(e => { if (e.terminal === terminal && !ended) ended = { exitCode: e.exitCode } })
-    terminal.sendText([...log.map(l => `echo "${l.replace(/"/g, '\\"')}"`), `${command} ${flags.join(' ')}`].join('; '))
+    terminal.sendText(`node "${launcher}" ${token}`)
 
     // 로딩 알림: 경과 시간을 1초마다 갱신하고, 취소하면 터미널을 닫는다
     const up = await vscode.window.withProgress(
