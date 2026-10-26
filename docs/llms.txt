@@ -19,5 +19,5 @@
 
 - [GitHub 저장소](https://github.com/leekh4232/open-with-slidev)
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=leekh.open-with-slidev)
-- [Slidev Themes · hossam](https://slidev-themes.hossam.kr/llms.txt): 경로로 지정해 쓰는 강의 · 발표용 테마
+- [Slidev Themes · hossam](https://slidev-themes.hossam.kr/llms.txt): 경로로 지정해 쓰는 코딩 강의용 테마
 - [Slidev 공식 문서](https://sli.dev)

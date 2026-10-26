@@ -2,7 +2,7 @@
 
 VS Code 확장 **Open with Slidev**(`leekh.open-with-slidev`) 저장소입니다. md 파일을 우클릭해 Slidev 개발 서버로 띄웁니다. 빌드 도구 없이 순수 JavaScript `extension.js` 하나로 동작하며, 테마 목록은 `themes.json`에 있습니다.
 
-강의 · 발표용 테마 `hossam`은 이 저장소에 없습니다. 별도 저장소 **slidev-themes**(`/Users/leekh/slidev-themes`, `git@github.com:leekh4232/slidev-themes.git`, 소개 페이지 https://slidev-themes.hossam.kr 는 그 저장소의 `docs/index.html`)에 있습니다. 확장은 이 테마를 내려받지 않습니다. 사용자는 저장소를 받아 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로로 적고, 확장은 경로로 적힌 테마를 그대로 Slidev에 넘깁니다. 내장 목록(`themes.json`)의 테마는 모두 npm에서 받습니다.
+코딩 강의용 테마 `hossam`은 이 저장소에 없습니다. 별도 저장소 **slidev-themes**(`/Users/leekh/slidev-themes`, `git@github.com:leekh4232/slidev-themes.git`, 소개 페이지 https://slidev-themes.hossam.kr 는 그 저장소의 `docs/index.html`)에 있습니다. 확장은 이 테마를 내려받지 않습니다. 사용자는 저장소를 받아 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로로 적고, 확장은 경로로 적힌 테마를 그대로 Slidev에 넘깁니다. 내장 목록(`themes.json`)의 테마는 모두 npm에서 받습니다.
 
 응답과 문서는 한글로 씁니다. 코드, 커밋 메시지, 설정 이름은 원래 언어를 유지합니다.
 
@@ -49,7 +49,7 @@ code --install-extension open-with-slidev-local.vsix --force
 - 설치 뒤 VS Code에서 **Developer: Reload Window**를 실행해야 새 버전이 적용됩니다.
 - `.vsix`는 `.gitignore`에 있어 커밋되지 않습니다.
 - 바뀐 기능을 실제로 돌려 봅니다. 최소한 아래를 확인합니다.
-  - slidev-themes 저장소의 `docs/examples/lecture-example.md`와 `talk-example.md`(프런트매터에 `theme: ../../hossam` 경로)를 우클릭 → **Open with Slidev**로 열면 서버가 뜨고 테마가 맞게 나온다.
+  - slidev-themes 저장소의 `docs/examples/lecture-example.md`(프런트매터에 `theme: ../../hossam` 경로)를 우클릭 → **Open with Slidev**로 열면 서버가 뜨고 테마가 맞게 나온다.
   - 테마를 처음 받는 상황(캐시가 빈 상태)에서도 된다. 캐시는 `~/Library/Application Support/Code/User/globalStorage/leekh.open-with-slidev/themes`입니다.
   - 프런트매터에 npm 테마(예: `theme: seriph`)를 적은 덱도 열린다 (테마 처리를 건드렸다면 필수).
 - `extension.js`의 순수 함수는 `vscode` 없이 Node로 바로 시험할 수 있습니다. 예: `node -e "const e=require('./extension.js'); e.ensureRepoTheme('/tmp/c', e.CATALOG[0], {}).then(console.log)"`

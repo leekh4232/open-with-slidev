@@ -78,7 +78,7 @@ Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아
 
 아래 이름을 md 프런트매터에 쓰거나(`theme: terminal`), 설정 `openWithSlidev.defaultTheme` 드롭다운에서 고르면 됩니다. 프로젝트에 해당 패키지가 이미 설치돼 있으면 그것을 쓰고, 없으면 처음 한 번 내려받아 캐시에 둔 뒤 `--theme` 절대 경로로 넘깁니다.
 
-- 폴더 테마: 프런트매터의 `theme`가 경로(`./`, `../`, `/`로 시작)면 내장 목록을 보지 않고 Slidev에 그대로 넘깁니다. 강의 · 발표용 [hossam 테마](https://slidev-themes.hossam.kr/)는 [slidev-themes](https://github.com/leekh4232/slidev-themes) 저장소를 받은 뒤 `theme: ./slidev-themes/hossam`으로 씁니다. 사용법은 아래 [테마 매뉴얼](#테마-매뉴얼).
+- 폴더 테마: 프런트매터의 `theme`가 경로(`./`, `../`, `/`로 시작)면 내장 목록을 보지 않고 Slidev에 그대로 넘깁니다. 코딩 강의용 [hossam 테마](https://slidev-themes.hossam.kr/)는 [slidev-themes](https://github.com/leekh4232/slidev-themes) 저장소를 받은 뒤 `theme: ./slidev-themes/hossam`으로 씁니다. 사용법은 아래 [테마 매뉴얼](#테마-매뉴얼).
 - 공식: `default`, `seriph`, `apple-basic`, `bricks`, `shibainu`
 - 갤러리: `geist`, `light-icons`, `eloc`, `purplin`, `unicorn`, `zhozhoba`, `penguin`, `vuetiful`, `takahashi`, `academic`, `mokkapps`, `the-unnamed`, `dracula`, `frankfurt`, `hep`, `excali-slide`, `mint`, `neversink`, `nord`, `scholarly`, `field-manual`, `touying`, `tahta`
 - 추천: `terminal`, `bestony2026`, `zhibai`, `legible`
@@ -89,22 +89,20 @@ Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아
 
 ## 테마 매뉴얼
 
-폴더 테마 `hossam`의 사용법과 예제 덱은 테마 사이트에 있습니다. 덱 헤더의 `style: lecture | talk`로 흰 바탕 강의용과 검정 바탕 발표용을 고르고, `sidebar: true | false`로 목차 사이드바를 켜고 끕니다.
+폴더 테마 `hossam`의 사용법과 예제 덱은 테마 사이트에 있습니다. 흰 바탕 코딩 강의용 테마이고, 덱 헤더의 `sidebar: true | false`로 목차 사이드바를 켜고 끕니다.
 
 ```md
 ---
 theme: ./slidev-themes/hossam
-style: talk        # 생략하면 lecture
-sidebar: true      # 생략하면 lecture는 켬, talk는 끔
+sidebar: true      # 생략하면 켬
 ---
 ```
 
 | 문서 | URL |
 |---|---|
 | Slidev Themes (테마 사이트) | https://slidev-themes.hossam.kr/ |
-| hossam 테마 (공통 설정 · 사이드바 · lecture 스타일) | https://slidev-themes.hossam.kr/hossam.html |
-| talk 스타일 (발표용 레이아웃 · 컴포넌트) | https://slidev-themes.hossam.kr/talk.html |
-| 예제 덱 | [lecture-example.md](https://github.com/leekh4232/slidev-themes/blob/main/docs/examples/lecture-example.md) · [talk-example.md](https://github.com/leekh4232/slidev-themes/blob/main/docs/examples/talk-example.md) |
+| hossam 테마 (설정 · 사이드바 · 컴포넌트) | https://slidev-themes.hossam.kr/hossam.html |
+| 예제 덱 | [lecture-example.md](https://github.com/leekh4232/slidev-themes/blob/main/docs/examples/lecture-example.md) |
 
 ## 설정
 
