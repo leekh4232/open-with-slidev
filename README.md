@@ -15,7 +15,7 @@
 ## 할 수 있는 것
 
 - **우클릭 한 번으로 실행**: 편집기 본문, 편집기 탭, 탐색기의 `.md` 파일 어디서든 메뉴가 보입니다.
-- **설치 없이 동작**: Slidev가 설치된 폴더가 md 파일 위쪽에 있으면 그곳에서, 없으면 `npx`가 Slidev를 내려받아 실행합니다.
+- **프로젝트 설정 없이 동작**: Slidev가 설치된 폴더가 md 파일 위쪽에 있으면 그곳에서, 없으면 전역 설치된 `slidev`로 실행합니다. 둘 다 없으면 전역 설치 명령을 안내합니다.
 - **포트 자동 선택**: 설정한 포트가 사용 중이면 1씩 올려 최대 3회 다시 시도합니다. 덱 여러 개를 동시에 띄울 수 있습니다.
 - **진행 상황 표시**: 터미널에 파일·루트·포트·테마를 출력하고, 서버가 뜰 때까지 경과 시간이 보이는 알림을 띄웁니다(취소 가능).
 - **미리보기 위치 선택**: 외부 브라우저 또는 VS Code 안 Simple Browser 탭(편집기 옆) 중 고를 수 있습니다.
@@ -26,11 +26,18 @@
 
 ## 준비물
 
-Node.js 18 이상만 있으면 됩니다. **프로젝트에 Slidev를 설치하지 않아도 동작합니다.**
+Node.js 18 이상과 Slidev가 필요합니다. **프로젝트에 Slidev를 설치하지 않아도 전역 설치 하나로 동작합니다.**
 
 - Slidev가 설치된 프로젝트(`node_modules/.bin/slidev`)가 md 파일 위쪽에 있으면 그곳에서 실행합니다. 시작이 빠르고 버전이 고정됩니다.
-- 없으면 `npx`가 `@slidev/cli`와 기본 테마를 내려받아 실행합니다. 첫 실행은 1~2분 걸릴 수 있고 이후에는 캐시를 씁니다. 프런트매터의 `theme: ./내테마`처럼 폴더로 가리키는 테마는 그대로 되고, npm 테마 패키지는 Slidev가 터미널에서 설치 여부를 묻습니다.
-- 전역 설치(`npm i -g @slidev/cli @slidev/theme-default`)를 쓰고 싶으면 `openWithSlidev.command`를 `slidev "${file}"`로 바꿉니다.
+- 없으면 PATH에 전역 설치된 `slidev`로 실행합니다. 설정 없이 자동으로 찾습니다. 전역에 기본 테마가 없으면 한 번 안내합니다.
+- 둘 다 없으면 실행하지 않고 설치 명령을 안내합니다. 터미널에서 한 번 설치한 뒤 다시 열면 됩니다. 알림의 **터미널에서 설치**를 누르면 그 명령을 터미널에 넣어 주고, **명령 복사**는 클립보드에 복사합니다.
+
+  ```sh
+  npm install -g @slidev/cli @slidev/theme-default
+  ```
+
+- 프런트매터의 `theme: ./내테마`처럼 폴더로 가리키는 테마는 그대로 되고, npm 테마 패키지는 Slidev가 터미널에서 설치 여부를 묻습니다.
+- `openWithSlidev.command`를 바꾸면(예: `pnpm exec slidev "${file}"`) 위 탐색 없이 그 명령을 그대로 씁니다.
 
 ## 사용법
 
@@ -51,8 +58,8 @@ Node.js 18 이상만 있으면 됩니다. **프로젝트에 Slidev를 설치하�
 - 갤러리: `geist`, `light-icons`, `eloc`, `purplin`, `unicorn`, `zhozhoba`, `penguin`, `vuetiful`, `takahashi`, `academic`, `mokkapps`, `the-unnamed`, `dracula`, `frankfurt`, `hep`, `excali-slide`, `mint`, `neversink`, `nord`, `scholarly`, `field-manual`, `touying`, `tahta`
 - 추천: `terminal`, `bestony2026`, `zhibai`, `legible`
 
-- 캐시 위치는 VS Code의 익스텐션 전역 저장소(`globalStorage/leekh.open-with-slidev/themes`)이며, 명령 팔레트의 **Slidev: 내장 테마 미리 내려받기**로 여러 개를 한 번에 받아 둘 수 있습니다(오프라인 강의 전에 유용).
-- 일부 테마(purplin, light-icons, unicorn, zhozhoba)는 Slidev 전체를 의존성으로 끌어와 캐시가 수백 MB가 됩니다. 처음 내려받을 때 1~2분 걸릴 수 있습니다.
+- 캐시 위치는 VS Code의 익스텐션 전역 저장소(`globalStorage/leekh.open-with-slidev/themes`)이며, 명령 팔레트의 **Slidev: 내장 테마 미리 내려받기**로 여러 개를 한 번에 받아 둘 수 있습니다(오프라인 강의 전에 유용). 내려받는 동안 알림에 경과 시간과 받은 패키지 수가, 출력 창 **Open with Slidev**에 npm 출력이 보이고, 알림에서 취소할 수 있습니다.
+- 일부 테마(purplin, light-icons, unicorn, zhozhoba)는 Slidev 전체를 의존성으로 끌어와 캐시가 수백 MB가 됩니다. 처음 내려받을 때 수 분 걸릴 수 있습니다.
 - 목록에 없는 테마는 Slidev가 터미널에서 설치 여부를 묻는 기존 방식대로 동작하고, `openWithSlidev.defaultThemePath`로 경로나 npm 이름을 직접 지정할 수도 있습니다. 프런트매터의 테마가 프로젝트에도 내장 목록에도 없으면 실행 전에 경고를 띄웁니다(npm에 없는 이름이면 Slidev 설치가 404로 실패합니다).
 
 ## 테마 매뉴얼
@@ -81,7 +88,7 @@ sidebar: true      # 생략하면 lecture는 켬, talk는 끔
 | 설정 | 기본값 | 설명 |
 |---|---|---|
 | `openWithSlidev.previewIn` | `browser` | `browser`: 외부 브라우저에서 엽니다. `vscode`: VS Code 안 Simple Browser 탭을 편집기 옆에 엽니다. |
-| `openWithSlidev.command` | `npx slidev "${file}"` | 실행 명령. `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 예: `pnpm exec slidev "${file}"` |
+| `openWithSlidev.command` | `npx slidev "${file}"` | 실행 명령. `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 기본값이면 Slidev가 없는 루트에서는 전역 `slidev`로 실행합니다. 예: `pnpm exec slidev "${file}"` |
 | `openWithSlidev.extraArgs` | (없음) | 명령 끝에 덧붙일 인자. 예: `--remote`(다른 기기에서 접속), `--log info` |
 | `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고, `restart`는 서버를 끄고 다시 띄웁니다. |
 | `openWithSlidev.port` | `3030` | 시작 포트. 사용 중이면 1씩 올려 최대 3회 다시 시도합니다. |
@@ -107,15 +114,17 @@ sidebar: true      # 생략하면 lecture는 켬, talk는 끔
 ## 동작 순서
 
 1. 파일이 `filePatterns`에 맞는지 확인하고, 수정 중이면 저장합니다.
-2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다. 루트에 Slidev가 없으면 내려받아 실행하는 명령으로 바꿉니다.
+2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다. 루트에 Slidev가 없으면 전역 `slidev`를 찾고, 그것도 없으면 설치 명령을 안내하고 멈춥니다. 같은 파일의 서버가 아직 시작 중이면 새로 띄우지 않고 그 터미널을 보여 줍니다.
 3. `port`부터 비어 있는 포트를 찾습니다(사용 중이면 +1, 최대 3회).
 4. 테마를 정합니다. 프런트매터의 테마 이름이 프로젝트에 없고 내장 목록에 있으면 캐시에서, 프런트매터에 테마가 없으면 `defaultThemePath` 또는 `defaultTheme`에서 가져와 `--theme`로 넘깁니다.
 5. 루트에서 `command`에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다.
-6. 터미널에 진행 과정을 출력하고, 서버가 HTTP 응답을 줄 때까지(최대 3분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
+6. 터미널에 진행 과정을 출력하고, 서버가 HTTP 응답을 줄 때까지(최대 5분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
 
 ## 설치
 
 Marketplace에서 "Open with Slidev"를 검색해 설치하거나, [Releases](https://github.com/leekh4232/open-with-slidev/releases)에서 `.vsix`를 받아 설치합니다.
+
+새 버전은 VS Code의 확장 자동 업데이트(설정 `extensions.autoUpdate`, 기본 켜짐)로 설치됩니다. 이 설정이 꺼져 있으면 확장이 처음 켜질 때 한 번만 켜기를 권하는 알림을 띄웁니다.
 
 ```bash
 code --install-extension open-with-slidev-<버전>.vsix

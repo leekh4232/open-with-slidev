@@ -1,7 +1,7 @@
 {
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
-  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없어도 되고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다.",
+  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없어도 전역 설치 하나로 동작하고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다.",
   "version": "0.5.0",
   "publisher": "leekh",
   "license": "MIT",
@@ -72,7 +72,7 @@
         "openWithSlidev.command": {
           "type": "string",
           "default": "npx slidev \"${file}\"",
-          "description": "실행 명령. ${file} = 프로젝트 루트 기준 md 상대 경로, ${root} = 프로젝트 루트. 포트·--open·테마·extraArgs 는 뒤에 자동으로 붙는다. 비우거나 기본값이면 Slidev 가 설치된 폴더에서는 npx slidev, 없으면 npx -p @slidev/cli … 로 내려받아 실행. 예: slidev \"${file}\" (전역 설치), pnpm exec slidev \"${file}\""
+          "description": "실행 명령. ${file} = 프로젝트 루트 기준 md 상대 경로, ${root} = 프로젝트 루트. 포트·--open·테마·extraArgs 는 뒤에 자동으로 붙는다. 비우거나 기본값이면 Slidev 가 설치된 폴더에서는 npx slidev, 없으면 전역 설치된 slidev 로 실행하고, 그것도 없으면 설치 명령(npm install -g @slidev/cli @slidev/theme-default)을 안내. 예: pnpm exec slidev \"${file}\""
         },
         "openWithSlidev.extraArgs": {
           "type": "string",
@@ -102,7 +102,7 @@
         "openWithSlidev.projectRoot": {
           "type": "string",
           "default": "",
-          "description": "Slidev 가 설치된 폴더(node_modules/.bin/slidev 가 있는 곳). 비우면 md 파일 위쪽으로 자동 탐색하고, 없으면 npx 가 Slidev 를 내려받아 실행한다. 절대 경로 또는 워크스페이스 기준 상대 경로"
+          "description": "Slidev 가 설치된 폴더(node_modules/.bin/slidev 가 있는 곳). 비우면 md 파일 위쪽으로 자동 탐색하고, 없으면 전역 설치된 slidev 로 실행한다(없으면 설치 명령 안내). 절대 경로 또는 워크스페이스 기준 상대 경로"
         },
         "openWithSlidev.defaultTheme": {
           "type": "string",
