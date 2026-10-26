@@ -25,11 +25,13 @@ VS Code 확장 **Open with Slidev**(`leekh.open-with-slidev`) 저장소입니다
 |:--|:--|
 | `README.md` | Marketplace와 GitHub에 보이는 설명. 배지, 할 수 있는 것, 사용법, 테마 목록, 설정 표, 동작 순서 |
 | `docs/index.html` | 소개 페이지 https://open-with-slidev.hossam.kr (`docs/CNAME`). 한 페이지, 사이드바 없음, 다크 |
+| `docs/llms.txt` · `docs/robots.txt` · `docs/sitemap.xml` | AI · 크롤러용. `llms.txt`는 사이트 요약(마크다운)과 문서 링크. 각 html `<head>`에는 JSON-LD 구조화 데이터와 `llms.txt` 링크가 있습니다 |
 | `docs/style.css` | 소개 페이지 스타일 |
 | `package.json` | 설정 설명 · 드롭다운 설명(`enumDescriptions`) · 명령 이름 |
 | `themes.json` | 테마 목록. 드롭다운(`defaultTheme`의 `enum`)과 같은 순서 · 같은 항목을 유지 |
 
 - **제거된 기능은 "제거됨"이라고 쓰지 않고 아예 언급하지 않습니다.** 문서에서 그 기능에 대한 문장, 표 행, 그림 설명을 지웁니다. 제거 기록은 CHANGELOG에만 남깁니다.
+- 기능 · 명령 · 메뉴 · 요구 버전이 바뀌면 `docs/llms.txt`의 요약과 html `<head>`의 JSON-LD(`description` · `softwareRequirements`)도 맞춥니다. 페이지를 더하거나 빼면 `docs/sitemap.xml`도 고칩니다.
 - 소개 페이지(`index.html`)는 **이 확장이 무슨 일을 하는지만** 짧게 씁니다. 설정 이름 · 기본값 · 내부 동작은 README에 둡니다. 기능 카드는 짝수 개(지금 6개)를 유지합니다. Marketplace · GitHub · 테마 사이트 링크는 페이지 본문(버튼 · 배지 · 바닥글)에 넣습니다.
 - **테마 매뉴얼 · 화면 캡처 · 예제 덱은 이 저장소에 두지 않습니다.** slidev-themes 저장소의 `docs/`(https://slidev-themes.hossam.kr)에 있습니다. 소개 페이지의 테마 그림도 그 사이트의 `img/`를 가리킵니다.
 - 바꾼 뒤 예전 표현이 남았는지 검색합니다 (예: 제거한 설정 이름, 옛 주소).
