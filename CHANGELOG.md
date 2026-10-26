@@ -4,7 +4,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
-## [미배포]
+## [0.7.0] - 2026-10-27
 
 ### 추가
 - **Build with Slidev가 하위 메뉴가 되어 여러 형식으로 내보냅니다.** HTML(기존과 같은 한 파일) · PDF(`slides.pdf`) · PowerPoint(`slides.pptx`) · PNG(`slides-png/` 폴더) · Markdown(`slides-md/slides.md`와 슬라이드 PNG) 중에서 고릅니다. 편집기 본문 · 편집기 탭 · 탐색기 메뉴에 있고, 명령 팔레트에서는 `Build with Slidev: PDF (.pdf)`처럼 형식마다 명령이 있습니다.
