@@ -1,0 +1,22 @@
+# Open with Slidev
+
+> 마크다운 파일을 우클릭 한 번으로 Slidev 슬라이드로 열고, HTML 파일 하나로 빌드하는 VS Code 확장. Slidev를 미리 설치하지 않아도 된다. (A VS Code extension that opens a Markdown file as a Slidev deck with one right-click and builds it into a single self-contained HTML file.)
+
+- 확장 ID: `leekh.open-with-slidev` · VS Code 1.80 이상 · Node.js 18 이상 · MIT
+- 사용: `.md` 파일 우클릭 → **Open with Slidev**(서버를 띄우고 브라우저 또는 Simple Browser로 열기) 또는 **Build with Slidev**(md 옆에 같은 이름의 `.html` 하나 생성). 명령 팔레트의 `Slidev: Open with Slidev` · `Slidev: Build with Slidev`도 같다.
+- Slidev 탐색: md 위쪽 폴더에 설치된 Slidev를 쓰고, 없으면 처음 한 번 프로젝트 루트에 `@slidev/cli`를 `devDependencies`로 설치한다.
+- 포트는 사용 중이면 1씩 올려 최대 3회 재시도. 파일마다 `Slidev: 파일명` 터미널 하나. 발표자 모드(`/presenter`)를 함께 열 수 있다.
+- 내장 테마 32종(공식 5 · 갤러리 23 · 추천 4)을 이름만으로 쓴다(`theme: terminal`). 없으면 처음 쓸 때 npm에서 받아 캐시에 둔다. 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로를 적으면 그 폴더 테마를 그대로 쓴다.
+- 빌드 결과 HTML에는 JS · CSS · 테마 · md 기준 상대 경로 이미지가 모두 들어간다. `public/` 폴더의 파일은 들어가지 않는다.
+
+## Docs
+
+- [README (전체 설명 · 설정 · 동작 순서)](https://raw.githubusercontent.com/leekh4232/open-with-slidev/main/README.md): 사용법, 내장 테마 목록, 설정, 빌드 규칙
+- [소개 페이지](https://open-with-slidev.hossam.kr/): 기능 요약
+
+## Optional
+
+- [GitHub 저장소](https://github.com/leekh4232/open-with-slidev)
+- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=leekh.open-with-slidev)
+- [Slidev Themes · hossam](https://slidev-themes.hossam.kr/llms.txt): 경로로 지정해 쓰는 강의 · 발표용 테마
+- [Slidev 공식 문서](https://sli.dev)
