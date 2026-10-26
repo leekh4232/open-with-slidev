@@ -4,6 +4,11 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [미배포]
+
+### 추가
+- **우클릭 메뉴 Build with Slidev**: md 파일 옆에 같은 이름의 HTML 파일 하나(`slides.md` → `slides.html`)를 만듭니다. JS · CSS · 테마 · md 기준 상대 경로 이미지가 모두 들어가 서버 없이 더블클릭으로 열리고, 클릭 애니메이션과 발표자 모드(`#/presenter/1`)도 됩니다. 편집기 본문 · 편집기 탭 · 탐색기 메뉴와 명령 팔레트(`Slidev: Build with Slidev`)에 있습니다. 빌드 중에는 알림에 경과 시간이, 출력 창 **Open with Slidev**에 빌드 출력이 보이고 취소할 수 있습니다. `public/` 폴더의 파일은 들어가지 않아 끝난 뒤 알려 줍니다. 같은 이름의 HTML이 Slidev로 만든 파일이 아니면 덮어쓰기 전에 묻습니다.
+
 ## [0.5.3] - 2026-10-26
 
 ### 변경

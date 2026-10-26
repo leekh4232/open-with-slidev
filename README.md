@@ -10,7 +10,7 @@
 
 🌐 **소개 페이지 · [open-with-slidev.hossam.kr](https://open-with-slidev.hossam.kr/)**
 
-마크다운 파일을 우클릭하고 **Open with Slidev** 를 누르면 그 파일이 [Slidev](https://sli.dev) 슬라이드로 열립니다. 터미널을 열고, 프로젝트 폴더로 이동하고, 명령을 입력하는 과정이 메뉴 하나로 줄어듭니다.
+마크다운 파일을 우클릭하고 **Open with Slidev** 를 누르면 그 파일이 [Slidev](https://sli.dev) 슬라이드로 열립니다. 터미널을 열고, 프로젝트 폴더로 이동하고, 명령을 입력하는 과정이 메뉴 하나로 줄어듭니다. **Build with Slidev** 를 누르면 슬라이드를 HTML 파일 하나로 만들어 줍니다.
 
 ## 할 수 있는 것
 
@@ -22,6 +22,7 @@
 - **내장 테마 32종**: 공식 갤러리 테마 28종과 추천 테마 4종을 이름만으로 씁니다. 프로젝트에 설치돼 있지 않아도 처음 쓸 때 npm에서 내려받아 캐시에 두고, 프런트매터에 `theme`가 없는 파일에는 설정에서 고른 기본 테마를 적용합니다.
 - **폴더 테마**: 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로를 적으면 그 폴더를 그대로 씁니다. 테마를 고치면 다시 열 때 바로 반영됩니다.
 - **발표자 모드**: 원하면 `/presenter` 화면도 함께 엽니다.
+- **HTML 파일 하나로 빌드**: md 옆에 같은 이름의 `.html` 하나를 만듭니다. 서버 없이 더블클릭으로 열리고, 메일이나 메신저로 그 파일만 보내면 됩니다.
 - **파일마다 터미널 하나**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주거나(기본) 서버를 다시 띄웁니다.
 
 ## 준비물
@@ -43,6 +44,17 @@ Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아
 명령 팔레트(`Cmd/Ctrl+Shift+P`)에서 `Slidev: Open with Slidev`로도 실행할 수 있습니다. md 편집기가 열려 있지 않으면 워크스페이스의 md 파일 목록이 떠서 고를 수 있습니다.
 
 서버를 끄려면 해당 터미널에서 `Ctrl+C`를 누르거나 터미널을 닫습니다. `openWithSlidev.stopOnClose`를 켜면 md 편집기를 닫을 때 서버도 함께 꺼집니다.
+
+### HTML 파일로 빌드
+
+우클릭 → **Build with Slidev**를 누르면 md 파일 옆에 같은 이름의 HTML 파일이 생깁니다(`slides.md` → `slides.html`). 명령 팔레트의 `Slidev: Build with Slidev`로도 실행합니다.
+
+- **파일 하나에 모두 들어갑니다.** JS · CSS · 테마 · md 기준 상대 경로로 넣은 이미지(`![](./img/a.png)`)가 HTML 안에 들어가, 그 파일만 있으면 더블클릭으로 열립니다. 클릭 애니메이션과 발표자 모드(주소 끝 `#/presenter/1`)도 됩니다.
+- **`public/` 폴더의 파일은 들어가지 않습니다.** `/pic.png`처럼 `public/`을 가리킨 이미지는 깨지므로, 빌드 뒤 알림과 출력 창(`SKIPPED …`)에 알려 줍니다. 이미지는 md 기준 상대 경로로 적으세요.
+- 글꼴은 Slidev 기본 설정대로 Google Fonts에서 받으므로, 인터넷이 없으면 대체 글꼴로 보입니다.
+- 같은 이름의 HTML이 이미 있는데 Slidev로 만든 파일이 아니면 덮어쓰기 전에 묻습니다.
+- 빌드하는 동안 알림에 경과 시간이, 출력 창 **Open with Slidev**에 빌드 출력이 보이고, 알림에서 취소할 수 있습니다. 끝나면 **브라우저로 열기** · **폴더에서 보기** 버튼이 나옵니다.
+- 프로젝트의 Slidev(`@slidev/cli`)로 빌드합니다. 테마는 **Open with Slidev**와 같은 규칙으로 정합니다.
 
 ## 내장 테마
 
@@ -115,6 +127,8 @@ sidebar: true      # 생략하면 lecture는 켬, talk는 끔
 5. 루트에서 `command`에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다. 터미널에는 확장에 든 실행기(`node launch.js …`) 한 줄만 보내고, 실행기가 배너를 찍은 뒤 그 명령을 같은 터미널에서 돌립니다.
 6. 서버가 HTTP 응답을 줄 때까지(최대 5분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
 
+**Build with Slidev**는 1, 2, 4번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 프로젝트의 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다.
+
 ## 설치
 
 Marketplace에서 "Open with Slidev"를 검색해 설치하거나, [Releases](https://github.com/leekh4232/open-with-slidev/releases)에서 `.vsix`를 받아 설치합니다.
@@ -127,7 +141,7 @@ code --install-extension open-with-slidev-<버전>.vsix
 
 ## 개발
 
-빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `themes.json`(내장 테마 목록), `docs/`(소개 페이지, GitHub Pages로 게시)입니다. `hossam` 테마는 별도 저장소 [slidev-themes](https://github.com/leekh4232/slidev-themes)에 있습니다.
+빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `build.js`(HTML 한 파일 빌더), `themes.json`(내장 테마 목록), `docs/`(소개 페이지, GitHub Pages로 게시)입니다. `hossam` 테마는 별도 저장소 [slidev-themes](https://github.com/leekh4232/slidev-themes)에 있습니다.
 
 ```bash
 npm install                                   # 패키징 도구(@vscode/vsce) 설치

@@ -1,7 +1,7 @@
 {
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
-  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없으면 처음 한 번 그 폴더에 설치해 주고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다.",
+  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없으면 처음 한 번 그 폴더에 설치해 주고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다. 'Build with Slidev' 로 서버 없이 열리는 HTML 한 파일도 만든다.",
   "version": "0.5.3",
   "publisher": "leekh",
   "license": "MIT",
@@ -25,6 +25,11 @@
         "category": "Slidev"
       },
       {
+        "command": "openWithSlidev.build",
+        "title": "Build with Slidev",
+        "category": "Slidev"
+      },
+      {
         "command": "openWithSlidev.downloadThemes",
         "title": "내장 테마 미리 내려받기",
         "category": "Slidev"
@@ -36,6 +41,11 @@
           "command": "openWithSlidev.open",
           "when": "resourceLangId == markdown && openWithSlidev.matches",
           "group": "navigation@1"
+        },
+        {
+          "command": "openWithSlidev.build",
+          "when": "resourceLangId == markdown && openWithSlidev.matches",
+          "group": "navigation@2"
         }
       ],
       "editor/title/context": [
@@ -43,6 +53,11 @@
           "command": "openWithSlidev.open",
           "when": "resourceLangId == markdown",
           "group": "navigation@1"
+        },
+        {
+          "command": "openWithSlidev.build",
+          "when": "resourceLangId == markdown",
+          "group": "navigation@2"
         }
       ],
       "explorer/context": [
@@ -50,6 +65,11 @@
           "command": "openWithSlidev.open",
           "when": "resourceLangId == markdown || resourceExtname == .md",
           "group": "navigation@1"
+        },
+        {
+          "command": "openWithSlidev.build",
+          "when": "resourceLangId == markdown || resourceExtname == .md",
+          "group": "navigation@2"
         }
       ]
     },

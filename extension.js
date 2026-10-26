@@ -340,7 +340,8 @@ function activate(context) {
     return pick ? pick.uri : null
   }
 
-  const open = async (uri) => {
+  /** 실행 대상 md 파일과 프로젝트 루트를 정한다 (Open · Build 공통). 대상이 아니거나 취소하면 null. */
+  const prepare = async (uri) => {
     const c = cfg()
     const isMd = u => u && u.scheme === 'file' && /\.md$/i.test(u.fsPath)
     let target = uri instanceof vscode.Uri ? uri : vscode.window.activeTextEditor?.document.uri
@@ -370,8 +371,14 @@ function activate(context) {
       notified.add(root)
       vscode.window.showInformationMessage(`Open with Slidev: ${path.basename(root)} 에 Slidev 가 없어 그 폴더에 설치합니다 (처음 한 번, 수 분 걸릴 수 있음). 진행 상황은 알림과 출력 창에 보입니다.`)
     }
+    return { file, root, customCommand }
+  }
 
-    const previewIn = c.get('previewIn', 'browser')
+  const open = async (uri) => {
+    const t = await prepare(uri)
+    if (!t) return
+    const { file, root, customCommand } = t
+    const previewIn = cfg().get('previewIn', 'browser')
     // 같은 파일을 아직 시작하는 중이면(Slidev 내려받기, 서버 대기) 새로 띄우지 않고 터미널만 보여 준다 — 다시 클릭할 때마다 처음부터 시작하거나 둘이 겹치지 않게.
     if (starting.has(file)) {
       sessions.get(file)?.terminal.show(previewIn === 'vscode')
@@ -380,6 +387,30 @@ function activate(context) {
     }
     starting.add(file)
     try { await launch(file, root, previewIn, customCommand) } finally { starting.delete(file) }
+  }
+
+  /** 테마: ① 프런트매터에 이름이 있고 프로젝트에 그 패키지가 없는데 내장 목록에 있으면 캐시에서 ② 프런트매터에 없으면 defaultThemePath > defaultTheme(내장).
+   *  { fm: 프런트매터 theme, themeArg: --theme 로 넘길 값, themeMissing: 프로젝트에도 내장 목록에도 없는 프런트매터 테마 이름 } */
+  const themeFor = async (file, root) => {
+    const c = cfg()
+    let text = ''
+    try { text = fs.readFileSync(file, 'utf8') } catch { /* 읽기 실패: 테마 처리 생략 */ }
+    const fm = frontmatterTheme(text)
+    let themeArg = ''
+    let themeMissing = ''   // Slidev 가 npm 설치를 묻고, 패키지가 없으면 실패한다
+    if (fm) {
+      if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
+        const entry = catalogEntry(fm)
+        if (entry) themeArg = (await ensureTheme(entry)) || ''
+        else themeMissing = fm
+      }
+    } else {
+      const custom = (c.get('defaultThemePath') || '').trim()
+      const sel = c.get('defaultTheme', '')
+      if (custom) themeArg = resolveTheme(custom, root)
+      else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
+    }
+    return { fm, themeArg, themeMissing }
   }
 
   /** 파일 하나를 Slidev 로 띄운다 (open 에서 검사가 끝난 뒤). */
@@ -412,24 +443,7 @@ function activate(context) {
     const command = template.replace(/\$\{file\}/g, rel).replace(/\$\{root\}/g, root)
     const flags = [`--port ${port}`]
     if (previewIn === 'browser') flags.push('--open')
-    // 테마: ① 프런트매터에 이름이 있고 프로젝트에 그 패키지가 없는데 내장 목록에 있으면 캐시에서 ② 프런트매터에 없으면 defaultThemePath > defaultTheme(내장)
-    let text = ''
-    try { text = fs.readFileSync(file, 'utf8') } catch { /* 읽기 실패: 테마 처리 생략 */ }
-    const fm = frontmatterTheme(text)
-    let themeArg = ''
-    let themeMissing = ''   // 프런트매터 테마가 프로젝트에도 내장 목록에도 없을 때 그 이름: Slidev 가 npm 설치를 묻고, 패키지가 없으면 실패한다
-    if (fm) {
-      if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
-        const entry = catalogEntry(fm)
-        if (entry) themeArg = (await ensureTheme(entry)) || ''
-        else themeMissing = fm
-      }
-    } else {
-      const custom = (c.get('defaultThemePath') || '').trim()
-      const sel = c.get('defaultTheme', '')
-      if (custom) themeArg = resolveTheme(custom, root)
-      else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
-    }
+    const { fm, themeArg, themeMissing } = await themeFor(file, root)
     if (themeArg) flags.push(`--theme "${themeArg}"`)
     // 터미널 배너에 보여 줄 테마 설명
     const themeLabel = fm
@@ -484,7 +498,53 @@ function activate(context) {
     if (c.get('openPresenter', false)) vscode.env.openExternal(vscode.Uri.parse(url + 'presenter/'))
   }
 
+  /** md 옆에 같은 이름의 .html 한 파일로 빌드한다 (build.js: JS·CSS·이미지를 모두 넣고 해시 라우팅이라 더블클릭으로 열린다).
+   *  터미널 대신 자식 프로세스로 돌려 끝난 것을 알고, 출력은 출력 창에, 경과 시간은 알림에 보여 준다. */
+  const builder = path.join(context.extensionPath, 'build.js')
+  const building = new Set()   // 빌드 중인 파일 경로
+  const buildHtml = async (uri) => {
+    const t = await prepare(uri)
+    if (!t) return
+    const { file, root } = t
+    if (building.has(file)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 빌드하는 중입니다.`); return }
+    const outFile = file.replace(/\.md$/i, '.html')
+    // 같은 이름의 html 이 Slidev 로 만든 것이 아니면 덮어쓰기 전에 묻는다
+    if (fs.existsSync(outFile) && !fs.readFileSync(outFile, 'utf8').slice(0, 4000).includes('property="slidev:version"')) {
+      const pick = await vscode.window.showWarningMessage(`${path.basename(outFile)} 가 이미 있습니다. Slidev 로 만든 파일이 아닌데 덮어쓸까요?`, { modal: true }, '덮어쓰기')
+      if (pick !== '덮어쓰기') return
+    }
+    building.add(file)
+    try {
+      if (!(await ensureSlidevLocal(root))) return
+      const { themeArg } = await themeFor(file, root)
+      const token = Buffer.from(JSON.stringify({ entry: file, root, out: outFile, theme: themeArg }), 'utf8').toString('base64url')
+      out.show(true)
+      out.appendLine(`[Build with Slidev] ${file} → ${outFile}`)
+      const skipped = []
+      const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Build with Slidev', cancellable: true }, (progress, ctoken) => new Promise(resolve => {
+        const t0 = Date.now()
+        const tick = () => progress.report({ message: `${path.basename(file)} 빌드 중 · ${Math.round((Date.now() - t0) / 1000)}초` })
+        tick(); const timer = setInterval(tick, 1000)
+        // shell: 윈도우에서도 PATH 의 node 를 찾기 위해. detached(POSIX): 취소할 때 프로세스 그룹째 끝내기 위해
+        const child = spawn(`node "${builder}" ${token}`, { cwd: root, shell: true, detached: process.platform !== 'win32', windowsHide: true })
+        const take = chunk => { for (const l of chunk.toString().split(/\r?\n/)) if (l.trim()) { out.appendLine(l); if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) } }
+        child.stdout.on('data', take); child.stderr.on('data', take)
+        const sub = ctoken.onCancellationRequested(() => killTree(child))
+        const done = r => { clearInterval(timer); sub.dispose(); resolve(r) }
+        child.on('error', e => { out.appendLine(e.message); done(false) })
+        child.on('close', code => done(ctoken.isCancellationRequested ? 'cancelled' : code === 0))
+      }))
+      if (result === 'cancelled') return
+      if (!result) { vscode.window.showErrorMessage('Build with Slidev: 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.'); return }
+      const note = skipped.length ? ` public 폴더 파일 ${skipped.length}개는 넣지 못했습니다(출력 창의 SKIPPED).` : ''
+      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(outFile)} 를 만들었습니다. 이 파일 하나만 있으면 더블클릭으로 열립니다.${note}`, '브라우저로 열기', '폴더에서 보기')
+      if (pick === '브라우저로 열기') vscode.env.openExternal(vscode.Uri.file(outFile))
+      else if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outFile))
+    } finally { building.delete(file) }
+  }
+
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.open', open))
+  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', buildHtml))
   context.subscriptions.push(vscode.window.onDidCloseTerminal(t => {
     for (const [k, v] of sessions) if (v.terminal === t) sessions.delete(k)
   }))
