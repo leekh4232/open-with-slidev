@@ -4,7 +4,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
-## [미배포]
+## [0.6.1] - 2026-10-27
 
 ### 수정
 - **Build with Slidev**로 만든 HTML을 열 때 브라우저 콘솔에 뜨던 `Failed to patch FloatingVue` 경고가 나오지 않습니다. Slidev 53이 쓰는 코드 타입 힌트 플러그인이 floating-vue 5.4와 맞지 않아 모든 페이지에서 내던 경고로, 슬라이드 동작에는 영향이 없었습니다.
