@@ -4,6 +4,15 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [미배포]
+
+### 추가
+- **Build with Slidev가 하위 메뉴가 되어 여러 형식으로 내보냅니다.** HTML(기존과 같은 한 파일) · PDF(`slides.pdf`) · PowerPoint(`slides.pptx`) · PNG(`slides-png/` 폴더) · Markdown(`slides-md/slides.md`와 슬라이드 PNG) 중에서 고릅니다. 편집기 본문 · 편집기 탭 · 탐색기 메뉴에 있고, 명령 팔레트에서는 `Build with Slidev: PDF (.pdf)`처럼 형식마다 명령이 있습니다.
+- PDF · PPTX · PNG · Markdown은 Slidev의 `slidev export`로 만듭니다. 프로젝트에 `playwright-chromium`이 없으면 처음 한 번 루트에 `devDependencies`로 설치하고 Chromium도 받습니다. 진행 상황은 알림과 출력 창 **Open with Slidev**에 보이고 취소할 수 있습니다.
+
+### 변경
+- HTML 빌드 명령의 팔레트 이름이 `Slidev: Build with Slidev`에서 `Build with Slidev: HTML (.html, 서버 없이 열리는 한 파일)`로 바뀌었습니다.
+
 ## [0.6.1] - 2026-10-27
 
 ### 수정

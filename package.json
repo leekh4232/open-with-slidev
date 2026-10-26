@@ -1,7 +1,7 @@
 {
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
-  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없으면 처음 한 번 그 폴더에 설치해 주고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다. 'Build with Slidev' 로 서버 없이 열리는 HTML 한 파일도 만든다.",
+  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없으면 처음 한 번 그 폴더에 설치해 주고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다. 'Build with Slidev' 하위 메뉴로 서버 없이 열리는 HTML 한 파일, PDF, PPTX, PNG, Markdown 으로 내보낸다.",
   "version": "0.6.1",
   "publisher": "leekh",
   "license": "MIT",
@@ -26,13 +26,39 @@
       },
       {
         "command": "openWithSlidev.build",
-        "title": "Build with Slidev",
-        "category": "Slidev"
+        "title": "HTML (.html, 서버 없이 열리는 한 파일)",
+        "category": "Build with Slidev"
+      },
+      {
+        "command": "openWithSlidev.export.pdf",
+        "title": "PDF (.pdf)",
+        "category": "Build with Slidev"
+      },
+      {
+        "command": "openWithSlidev.export.pptx",
+        "title": "PowerPoint (.pptx)",
+        "category": "Build with Slidev"
+      },
+      {
+        "command": "openWithSlidev.export.png",
+        "title": "PNG (슬라이드별 이미지 폴더)",
+        "category": "Build with Slidev"
+      },
+      {
+        "command": "openWithSlidev.export.md",
+        "title": "Markdown (.md + 슬라이드 PNG)",
+        "category": "Build with Slidev"
       },
       {
         "command": "openWithSlidev.downloadThemes",
         "title": "내장 테마 미리 내려받기",
         "category": "Slidev"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "openWithSlidev.buildMenu",
+        "label": "Build with Slidev"
       }
     ],
     "menus": {
@@ -43,9 +69,9 @@
           "group": "navigation@1"
         },
         {
-          "command": "openWithSlidev.build",
           "when": "resourceLangId == markdown && openWithSlidev.matches",
-          "group": "navigation@2"
+          "group": "navigation@2",
+          "submenu": "openWithSlidev.buildMenu"
         }
       ],
       "editor/title/context": [
@@ -55,9 +81,9 @@
           "group": "navigation@1"
         },
         {
-          "command": "openWithSlidev.build",
           "when": "resourceLangId == markdown",
-          "group": "navigation@2"
+          "group": "navigation@2",
+          "submenu": "openWithSlidev.buildMenu"
         }
       ],
       "explorer/context": [
@@ -67,9 +93,31 @@
           "group": "navigation@1"
         },
         {
-          "command": "openWithSlidev.build",
           "when": "resourceLangId == markdown || resourceExtname == .md",
-          "group": "navigation@2"
+          "group": "navigation@2",
+          "submenu": "openWithSlidev.buildMenu"
+        }
+      ],
+      "openWithSlidev.buildMenu": [
+        {
+          "command": "openWithSlidev.build",
+          "group": "1_html@1"
+        },
+        {
+          "command": "openWithSlidev.export.pdf",
+          "group": "2_export@1"
+        },
+        {
+          "command": "openWithSlidev.export.pptx",
+          "group": "2_export@2"
+        },
+        {
+          "command": "openWithSlidev.export.png",
+          "group": "2_export@3"
+        },
+        {
+          "command": "openWithSlidev.export.md",
+          "group": "2_export@4"
         }
       ]
     },

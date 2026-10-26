@@ -498,22 +498,38 @@ function activate(context) {
     if (c.get('openPresenter', false)) vscode.env.openExternal(vscode.Uri.parse(url + 'presenter/'))
   }
 
-  /** md 옆에 같은 이름의 .html 한 파일로 빌드한다 (build.js: JS·CSS·이미지를 모두 넣고 해시 라우팅이라 더블클릭으로 열린다).
-   *  터미널 대신 자식 프로세스로 돌려 끝난 것을 알고, 출력은 출력 창에, 경과 시간은 알림에 보여 준다. */
+  /** 자식 프로세스로 command 를 돌린다. 출력은 출력 창에, 경과 시간은 알림에 보여 주고 취소할 수 있다 (터미널과 달리 끝난 것을 안다).
+   *  onLine(줄) 로 출력 줄을 받는다. 돌려주는 값: true(성공) · false(실패) · 'cancelled' */
+  const runWithProgress = (label, command, cwd, onLine) => vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Build with Slidev', cancellable: true }, (progress, ctoken) => new Promise(resolve => {
+    const t0 = Date.now()
+    const tick = () => progress.report({ message: `${label} · ${Math.round((Date.now() - t0) / 1000)}초` })
+    tick(); const timer = setInterval(tick, 1000)
+    // shell: 윈도우에서도 PATH 의 node·npx 를 찾기 위해. detached(POSIX): 취소할 때 프로세스 그룹째 끝내기 위해
+    const child = spawn(command, { cwd, shell: true, detached: process.platform !== 'win32', windowsHide: true, env: { ...process.env, NO_COLOR: '1' } })
+    const take = chunk => { for (const l of chunk.toString().replace(/\x1b\[[0-9;]*m/g, '').split(/[\r\n]+/)) if (l.trim()) { out.appendLine(l); onLine?.(l) } }
+    child.stdout.on('data', take); child.stderr.on('data', take)
+    const sub = ctoken.onCancellationRequested(() => killTree(child))
+    const done = r => { clearInterval(timer); sub.dispose(); resolve(r) }
+    child.on('error', e => { out.appendLine(e.message); done(false) })
+    child.on('close', code => done(ctoken.isCancellationRequested ? 'cancelled' : code === 0))
+  }))
+
+  /** md 옆에 같은 이름의 .html 한 파일로 빌드한다 (build.js: JS·CSS·이미지를 모두 넣고 해시 라우팅이라 더블클릭으로 열린다). */
   const builder = path.join(context.extensionPath, 'build.js')
-  const building = new Set()   // 빌드 중인 파일 경로
+  const building = new Set()   // 빌드·내보내기 중인 "파일 경로|형식"
   const buildHtml = async (uri) => {
     const t = await prepare(uri)
     if (!t) return
     const { file, root } = t
-    if (building.has(file)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 빌드하는 중입니다.`); return }
+    const key = `${file}|html`
+    if (building.has(key)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 빌드하는 중입니다.`); return }
     const outFile = file.replace(/\.md$/i, '.html')
     // 같은 이름의 html 이 Slidev 로 만든 것이 아니면 덮어쓰기 전에 묻는다
     if (fs.existsSync(outFile) && !fs.readFileSync(outFile, 'utf8').slice(0, 4000).includes('property="slidev:version"')) {
       const pick = await vscode.window.showWarningMessage(`${path.basename(outFile)} 가 이미 있습니다. Slidev 로 만든 파일이 아닌데 덮어쓸까요?`, { modal: true }, '덮어쓰기')
       if (pick !== '덮어쓰기') return
     }
-    building.add(file)
+    building.add(key)
     try {
       if (!(await ensureSlidevLocal(root))) return
       const { themeArg } = await themeFor(file, root)
@@ -521,30 +537,77 @@ function activate(context) {
       out.show(true)
       out.appendLine(`[Build with Slidev] ${file} → ${outFile}`)
       const skipped = []
-      const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Build with Slidev', cancellable: true }, (progress, ctoken) => new Promise(resolve => {
-        const t0 = Date.now()
-        const tick = () => progress.report({ message: `${path.basename(file)} 빌드 중 · ${Math.round((Date.now() - t0) / 1000)}초` })
-        tick(); const timer = setInterval(tick, 1000)
-        // shell: 윈도우에서도 PATH 의 node 를 찾기 위해. detached(POSIX): 취소할 때 프로세스 그룹째 끝내기 위해
-        const child = spawn(`node "${builder}" ${token}`, { cwd: root, shell: true, detached: process.platform !== 'win32', windowsHide: true })
-        const take = chunk => { for (const l of chunk.toString().split(/\r?\n/)) if (l.trim()) { out.appendLine(l); if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) } }
-        child.stdout.on('data', take); child.stderr.on('data', take)
-        const sub = ctoken.onCancellationRequested(() => killTree(child))
-        const done = r => { clearInterval(timer); sub.dispose(); resolve(r) }
-        child.on('error', e => { out.appendLine(e.message); done(false) })
-        child.on('close', code => done(ctoken.isCancellationRequested ? 'cancelled' : code === 0))
-      }))
+      const result = await runWithProgress(`${path.basename(file)} 빌드 중`, `node "${builder}" ${token}`, root, l => { if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) })
       if (result === 'cancelled') return
       if (!result) { vscode.window.showErrorMessage('Build with Slidev: 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.'); return }
       const note = skipped.length ? ` public 폴더 파일 ${skipped.length}개는 넣지 못했습니다(출력 창의 SKIPPED).` : ''
       const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(outFile)} 를 만들었습니다. 이 파일 하나만 있으면 더블클릭으로 열립니다.${note}`, '브라우저로 열기', '폴더에서 보기')
       if (pick === '브라우저로 열기') vscode.env.openExternal(vscode.Uri.file(outFile))
       else if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outFile))
-    } finally { building.delete(file) }
+    } finally { building.delete(key) }
+  }
+
+  /** slidev export 는 Playwright(playwright-chromium)로 슬라이드를 찍는다. 프로젝트에 없으면 처음 한 번 devDependencies 로 설치한다 (Chromium 도 함께 받는다). */
+  const ensurePlaywright = async (root) => {
+    if (findLocalPackage(root, 'playwright-chromium')) return true
+    const manual = `cd "${root}" && npm install --save-dev playwright-chromium`
+    try {
+      await withInstallProgress(`Playwright (${path.basename(root)} 에 설치, 내보내기용 Chromium 포함)`, manual, opts => runNpm(root, 'install --save-dev --no-audit --no-fund --loglevel=http playwright-chromium', opts))
+    } catch (e) {
+      if (e.message !== 'cancelled') {
+        out.appendLine(`[Build with Slidev] 설치 실패: ${e.message}`)
+        vscode.window.showErrorMessage(`Build with Slidev: Playwright 설치 실패. 출력 창을 확인하세요. 터미널에서 직접: ${manual}`)
+      }
+      return false
+    }
+    return Boolean(findLocalPackage(root, 'playwright-chromium'))
+  }
+  /** 내보내기 형식. out(md 경로) → 결과 경로. png 는 폴더(Slidev 가 비우고 다시 만든다), md 는 PNG 를 md 와 같은 폴더에 쓰므로 원본을 덮지 않게 하위 폴더로 보낸다. */
+  const EXPORTS = {
+    pdf: { name: 'PDF', out: f => f.replace(/\.md$/i, '.pdf') },
+    pptx: { name: 'PPTX', out: f => f.replace(/\.md$/i, '.pptx') },
+    png: { name: 'PNG', out: f => f.replace(/\.md$/i, '-png'), dir: true },
+    md: { name: 'Markdown', out: f => path.join(f.replace(/\.md$/i, '-md'), path.basename(f)) },
+  }
+  /** slidev export 로 md 옆에 내보낸다. */
+  const exportAs = async (uri, format) => {
+    const fmt = EXPORTS[format]
+    const t = await prepare(uri)
+    if (!t) return
+    const { file, root } = t
+    const key = `${file}|${format}`
+    if (building.has(key)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 ${fmt.name} 로 내보내는 중입니다.`); return }
+    const outPath = fmt.out(file)
+    // png 폴더는 Slidev 가 통째로 지우고 다시 만든다. PNG 말고 다른 것이 들어 있으면 먼저 묻는다
+    if (fmt.dir && fs.existsSync(outPath) && fs.readdirSync(outPath).some(n => !/\.png$/i.test(n))) {
+      const pick = await vscode.window.showWarningMessage(`${path.basename(outPath)} 폴더를 비우고 다시 만듭니다. PNG 가 아닌 파일도 들어 있는데 계속할까요?`, { modal: true }, '계속')
+      if (pick !== '계속') return
+    }
+    building.add(key)
+    try {
+      if (!(await ensureSlidevLocal(root))) return
+      if (!(await ensurePlaywright(root))) return
+      const { themeArg } = await themeFor(file, root)
+      if (format === 'md') fs.mkdirSync(path.dirname(outPath), { recursive: true })
+      const command = `npx slidev export "${path.relative(root, file)}" --format ${format} --output "${outPath}"${themeArg ? ` --theme "${themeArg}"` : ''}`
+      out.show(true)
+      out.appendLine(`[Build with Slidev] ${file} → ${outPath}`)
+      out.appendLine(`$ ${command}`)
+      const result = await runWithProgress(`${path.basename(file)} → ${fmt.name} 내보내는 중`, command, root)
+      if (result === 'cancelled') return
+      if (!result) { vscode.window.showErrorMessage(`Build with Slidev: ${fmt.name} 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return }
+      const shown = fmt.dir ? `${path.basename(outPath)} 폴더` : format === 'md' ? `${path.basename(path.dirname(outPath))} 폴더(md 와 슬라이드 PNG)` : path.basename(outPath)
+      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${shown} 를 만들었습니다.`, '열기', '폴더에서 보기')
+      if (pick === '열기') {
+        if (format === 'md') vscode.window.showTextDocument(vscode.Uri.file(outPath))
+        else vscode.env.openExternal(vscode.Uri.file(outPath))
+      } else if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outPath))
+    } finally { building.delete(key) }
   }
 
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.open', open))
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', buildHtml))
+  for (const format of Object.keys(EXPORTS)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.export.${format}`, uri => exportAs(uri, format)))
   context.subscriptions.push(vscode.window.onDidCloseTerminal(t => {
     for (const [k, v] of sessions) if (v.terminal === t) sessions.delete(k)
   }))

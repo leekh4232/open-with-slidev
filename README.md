@@ -10,7 +10,7 @@
 
 🌐 **소개 페이지 · [open-with-slidev.hossam.kr](https://open-with-slidev.hossam.kr/)**
 
-마크다운 파일을 우클릭하고 **Open with Slidev** 를 누르면 그 파일이 [Slidev](https://sli.dev) 슬라이드로 열립니다. 터미널을 열고, 프로젝트 폴더로 이동하고, 명령을 입력하는 과정이 메뉴 하나로 줄어듭니다. **Build with Slidev** 를 누르면 슬라이드를 HTML 파일 하나로 만들어 줍니다.
+마크다운 파일을 우클릭하고 **Open with Slidev** 를 누르면 그 파일이 [Slidev](https://sli.dev) 슬라이드로 열립니다. 터미널을 열고, 프로젝트 폴더로 이동하고, 명령을 입력하는 과정이 메뉴 하나로 줄어듭니다. **Build with Slidev** 하위 메뉴에서는 슬라이드를 HTML 파일 하나, PDF, PPTX, PNG, Markdown으로 내보냅니다.
 
 ## 할 수 있는 것
 
@@ -23,6 +23,7 @@
 - **폴더 테마**: 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로를 적으면 그 폴더를 그대로 씁니다. 테마를 고치면 다시 열 때 바로 반영됩니다.
 - **발표자 모드**: 원하면 `/presenter` 화면도 함께 엽니다.
 - **HTML 파일 하나로 빌드**: md 옆에 같은 이름의 `.html` 하나를 만듭니다. 서버 없이 더블클릭으로 열리고, 메일이나 메신저로 그 파일만 보내면 됩니다.
+- **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. 처음 한 번 Playwright(Chromium)를 프로젝트에 설치합니다.
 - **파일마다 터미널 하나**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주거나(기본) 서버를 다시 띄웁니다.
 
 ## 준비물
@@ -45,9 +46,19 @@ Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아
 
 서버를 끄려면 해당 터미널에서 `Ctrl+C`를 누르거나 터미널을 닫습니다. `openWithSlidev.stopOnClose`를 켜면 md 편집기를 닫을 때 서버도 함께 꺼집니다.
 
-### HTML 파일로 빌드
+### 빌드 · 내보내기
 
-우클릭 → **Build with Slidev**를 누르면 md 파일 옆에 같은 이름의 HTML 파일이 생깁니다(`slides.md` → `slides.html`). 명령 팔레트의 `Slidev: Build with Slidev`로도 실행합니다.
+우클릭 → **Build with Slidev** 하위 메뉴에서 형식을 고릅니다. 명령 팔레트의 `Build with Slidev: PDF (.pdf)`처럼 `Build with Slidev:`로 시작하는 명령으로도 실행합니다.
+
+| 메뉴 | 결과 (`slides.md` 기준) |
+|:--|:--|
+| HTML | `slides.html` 한 파일. 서버 없이 더블클릭으로 열림 |
+| PDF | `slides.pdf` |
+| PowerPoint | `slides.pptx`. 슬라이드마다 이미지 한 장(클릭 단계별로 나뉨), 발표자 노트 포함 |
+| PNG | `slides-png/` 폴더에 슬라이드별 PNG |
+| Markdown | `slides-md/slides.md`와 같은 폴더의 슬라이드별 PNG. 발표자 노트는 본문으로 들어감 |
+
+#### HTML
 
 - **파일 하나에 모두 들어갑니다.** JS · CSS · 테마 · md 기준 상대 경로로 넣은 이미지(`![](./img/a.png)`)가 HTML 안에 들어가, 그 파일만 있으면 더블클릭으로 열립니다. 클릭 애니메이션과 발표자 모드(주소 끝 `#/presenter/1`)도 됩니다.
 - **`public/` 폴더의 파일은 들어가지 않습니다.** `/pic.png`처럼 `public/`을 가리킨 이미지는 깨지므로, 빌드 뒤 알림과 출력 창(`SKIPPED …`)에 알려 줍니다. 이미지는 md 기준 상대 경로로 적으세요.
@@ -55,6 +66,13 @@ Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아
 - 같은 이름의 HTML이 이미 있는데 Slidev로 만든 파일이 아니면 덮어쓰기 전에 묻습니다.
 - 빌드하는 동안 알림에 경과 시간이, 출력 창 **Open with Slidev**에 빌드 출력이 보이고, 알림에서 취소할 수 있습니다. 끝나면 **브라우저로 열기** · **폴더에서 보기** 버튼이 나옵니다.
 - 프로젝트의 Slidev(`@slidev/cli`)로 빌드합니다. 테마는 **Open with Slidev**와 같은 규칙으로 정합니다.
+
+#### PDF · PPTX · PNG · Markdown
+
+- 프로젝트의 Slidev로 `slidev export --format <형식> --output <결과>`를 실행합니다. 테마는 **Open with Slidev**와 같은 규칙으로 정합니다. 프런트매터의 `exportFilename`보다 위 표의 이름이 우선합니다.
+- **처음 한 번 Playwright를 설치합니다.** Slidev는 브라우저로 슬라이드를 찍어 내보내므로, 프로젝트에 `playwright-chromium`이 없으면 루트에 `devDependencies`로 설치하고 Chromium도 함께 받습니다(수백 MB, 수 분 걸릴 수 있음). 진행 상황은 알림과 출력 창에 보이고 취소할 수 있습니다.
+- `slides-png/` 폴더는 내보낼 때마다 비우고 다시 만듭니다. PNG가 아닌 파일이 들어 있으면 먼저 묻습니다. PDF · PPTX는 같은 이름 파일을 덮어씁니다.
+- 내보내는 동안 알림에 경과 시간이, 출력 창 **Open with Slidev**에 Slidev 출력이 보이고, 알림에서 취소할 수 있습니다. 끝나면 **열기** · **폴더에서 보기** 버튼이 나옵니다. HTML · PDF 등 서로 다른 형식은 동시에 내보낼 수 있습니다.
 
 ## 내장 테마
 
@@ -127,7 +145,7 @@ sidebar: true      # 생략하면 lecture는 켬, talk는 끔
 5. 루트에서 `command`에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다. 터미널에는 확장에 든 실행기(`node launch.js …`) 한 줄만 보내고, 실행기가 배너를 찍은 뒤 그 명령을 같은 터미널에서 돌립니다.
 6. 서버가 HTTP 응답을 줄 때까지(최대 5분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
 
-**Build with Slidev**는 1, 2, 4번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 프로젝트의 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다.
+**Build with Slidev**는 1, 2, 4번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 프로젝트의 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다. PDF · PPTX · PNG · Markdown은 2번 뒤 `playwright-chromium`을 준비하고, 4번으로 정한 테마를 `--theme`로 넘겨 루트에서 `npx slidev export …`를 실행합니다.
 
 ## 설치
 
@@ -141,7 +159,7 @@ code --install-extension open-with-slidev-<버전>.vsix
 
 ## 개발
 
-빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `build.js`(HTML 한 파일 빌더), `themes.json`(내장 테마 목록), `docs/`(소개 페이지, GitHub Pages로 게시)입니다. `hossam` 테마는 별도 저장소 [slidev-themes](https://github.com/leekh4232/slidev-themes)에 있습니다.
+빌드 도구 없이 순수 JavaScript로 되어 있습니다. 파일은 `package.json`(메뉴·설정 정의), `extension.js`(동작), `build.js`(HTML 한 파일 빌더, 다른 형식은 `slidev export`를 그대로 씁니다), `themes.json`(내장 테마 목록), `docs/`(소개 페이지, GitHub Pages로 게시)입니다. `hossam` 테마는 별도 저장소 [slidev-themes](https://github.com/leekh4232/slidev-themes)에 있습니다.
 
 ```bash
 npm install                                   # 패키징 도구(@vscode/vsce) 설치
