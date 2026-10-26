@@ -15,7 +15,7 @@
 ## 할 수 있는 것
 
 - **우클릭 한 번으로 실행**: 편집기 본문, 편집기 탭, 탐색기의 `.md` 파일 어디서든 메뉴가 보입니다.
-- **프로젝트 설정 없이 동작**: Slidev가 설치된 폴더가 md 파일 위쪽에 있으면 그곳에서, 없으면 전역 설치된 `slidev`로 실행합니다. 둘 다 없으면 전역 설치 명령을 안내합니다.
+- **설치 없이 시작**: Slidev가 설치된 폴더가 md 파일 위쪽에 있으면 그곳에서 실행하고, 없으면 처음 한 번 프로젝트 폴더에 Slidev를 설치한 뒤 그 안에서 실행합니다.
 - **포트 자동 선택**: 설정한 포트가 사용 중이면 1씩 올려 최대 3회 다시 시도합니다. 덱 여러 개를 동시에 띄울 수 있습니다.
 - **진행 상황 표시**: 터미널에 파일·루트·포트·테마를 출력하고, 서버가 뜰 때까지 경과 시간이 보이는 알림을 띄웁니다(취소 가능).
 - **미리보기 위치 선택**: 외부 브라우저 또는 VS Code 안 Simple Browser 탭(편집기 옆) 중 고를 수 있습니다.
@@ -26,16 +26,11 @@
 
 ## 준비물
 
-Node.js 18 이상과 Slidev가 필요합니다. **프로젝트에 Slidev를 설치하지 않아도 전역 설치 하나로 동작합니다.**
+Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아도 됩니다.**
 
-- Slidev가 설치된 프로젝트(`node_modules/.bin/slidev`)가 md 파일 위쪽에 있으면 그곳에서 실행합니다. 시작이 빠르고 버전이 고정됩니다.
-- 없으면 PATH에 전역 설치된 `slidev`로 실행합니다. 설정 없이 자동으로 찾습니다. 전역에 기본 테마가 없으면 한 번 안내합니다.
-- 둘 다 없으면 실행하지 않고 설치 명령을 안내합니다. 터미널에서 한 번 설치한 뒤 다시 열면 됩니다. 알림의 **터미널에서 설치**를 누르면 그 명령을 터미널에 넣어 주고, **명령 복사**는 클립보드에 복사합니다.
-
-  ```sh
-  npm install -g @slidev/cli @slidev/theme-default
-  ```
-
+- Slidev가 설치된 프로젝트(`node_modules/.bin/slidev`)가 md 파일 위쪽에 있으면 그곳에서 실행합니다.
+- 없으면 처음 한 번 프로젝트 루트(워크스페이스 폴더, 없으면 md 파일 폴더)에 `@slidev/cli`와 기본 테마를 `devDependencies`로 설치하고 그 안의 Slidev로 띄웁니다. `package.json`이 없으면 만들고, git 저장소인데 `.gitignore`에 `node_modules`가 없으면 한 줄 보탭니다. 받아 둔 저장소처럼 `package.json`에 `@slidev/cli`만 적혀 있고 `node_modules`가 없으면 `npm install`로 채웁니다.
+- 설치하는 동안 알림에 경과 시간과 받은 패키지 수가, 출력 창 **Open with Slidev**에 npm 출력이 보입니다. 시간 제한은 없고(윈도우는 수 분 걸릴 수 있습니다), 알림에서 취소할 수 있으며 실패하면 **다시 시도**로 이어서 받습니다. 다음부터는 바로 뜹니다.
 - 프런트매터의 `theme: ./내테마`처럼 폴더로 가리키는 테마는 그대로 되고, npm 테마 패키지는 Slidev가 터미널에서 설치 여부를 묻습니다.
 - `openWithSlidev.command`를 바꾸면(예: `pnpm exec slidev "${file}"`) 위 탐색 없이 그 명령을 그대로 씁니다.
 
@@ -88,7 +83,7 @@ sidebar: true      # 생략하면 lecture는 켬, talk는 끔
 | 설정 | 기본값 | 설명 |
 |---|---|---|
 | `openWithSlidev.previewIn` | `browser` | `browser`: 외부 브라우저에서 엽니다. `vscode`: VS Code 안 Simple Browser 탭을 편집기 옆에 엽니다. |
-| `openWithSlidev.command` | `npx slidev "${file}"` | 실행 명령. `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 기본값이면 Slidev가 없는 루트에서는 전역 `slidev`로 실행합니다. 예: `pnpm exec slidev "${file}"` |
+| `openWithSlidev.command` | `npx slidev "${file}"` | 실행 명령. `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 기본값이면 Slidev가 없는 루트에는 처음 한 번 설치한 뒤 실행합니다. 예: `pnpm exec slidev "${file}"` |
 | `openWithSlidev.extraArgs` | (없음) | 명령 끝에 덧붙일 인자. 예: `--remote`(다른 기기에서 접속), `--log info` |
 | `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고, `restart`는 서버를 끄고 다시 띄웁니다. |
 | `openWithSlidev.port` | `3030` | 시작 포트. 사용 중이면 1씩 올려 최대 3회 다시 시도합니다. |
@@ -114,7 +109,7 @@ sidebar: true      # 생략하면 lecture는 켬, talk는 끔
 ## 동작 순서
 
 1. 파일이 `filePatterns`에 맞는지 확인하고, 수정 중이면 저장합니다.
-2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다. 루트에 Slidev가 없으면 전역 `slidev`를 찾고, 그것도 없으면 설치 명령을 안내하고 멈춥니다. 같은 파일의 서버가 아직 시작 중이면 새로 띄우지 않고 그 터미널을 보여 줍니다.
+2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다. 루트에 실행할 수 있는 Slidev가 없으면 먼저 그 폴더에 설치합니다. 같은 파일의 서버가 아직 시작 중이면 새로 띄우지 않고 그 터미널을 보여 줍니다.
 3. `port`부터 비어 있는 포트를 찾습니다(사용 중이면 +1, 최대 3회).
 4. 테마를 정합니다. 프런트매터의 테마 이름이 프로젝트에 없고 내장 목록에 있으면 캐시에서, 프런트매터에 테마가 없으면 `defaultThemePath` 또는 `defaultTheme`에서 가져와 `--theme`로 넘깁니다.
 5. 루트에서 `command`에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다.

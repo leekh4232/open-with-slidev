@@ -1,8 +1,9 @@
 // Open with Slidev — 우클릭한 md 파일을 Slidev 개발 서버로 띄운다.
 // 동작: md 파일 폴더에서 위로 올라가며 Slidev 가 설치된 프로젝트(node_modules/.bin/slidev 또는 package.json 의 @slidev/cli)를 찾고
 //       (projectRoot 설정이 있으면 그 폴더), 빈 포트를 골라 그 폴더의 터미널에서 `npx slidev <상대경로> --port N …` 을 실행한다.
-//       Slidev 가 설치된 곳이 없으면 전역 설치된 slidev(npm i -g @slidev/cli @slidev/theme-default, PATH 에서 찾음)를 쓴다.
-//       그것도 없으면 전역 설치 명령을 안내하고 멈춘다. 확장이 대신 내려받지는 않는다 (npx 임시 설치는 윈도우에서 너무 느리고 중간에 깨지기 쉬웠다).
+//       Slidev 가 설치된 곳이 없으면 처음 한 번 그 프로젝트 루트에 npm 으로 @slidev/cli 와 기본 테마를 devDependencies 로 설치하고(package.json 이 없으면 만든다),
+//       그 뒤로는 프로젝트 안의 Slidev 로 바로 띄운다. 설치는 확장이 직접 돌려(시간 제한 없음, 취소 가능) 진행 상황을 알림과 출력 창에 보여 준다.
+//       (npx 임시 설치는 윈도우에서 너무 느리고 중간에 깨지기 쉬웠고, 전역 설치는 시작이 느렸다.)
 //       내장 테마(themes.json): 프런트매터 theme 이름이나 defaultTheme 설정이 목록에 있으면 캐시 폴더에 npm 으로 내려받아 --theme 절대 경로로 넘긴다.
 //       프런트매터 theme 가 경로(./hossam 등)면 손대지 않고 Slidev 가 그대로 읽는다.
 //       서버가 응답하면 설정에 따라 외부 브라우저(--open) 또는 VS Code Simple Browser 에 띄우고, 발표자 모드도 열 수 있다.
@@ -107,45 +108,22 @@ function cachedThemePath(cacheDir, pkg) {
   const p = path.join(cacheDir, 'node_modules', pkg)
   return fs.existsSync(path.join(p, 'package.json')) ? p : null
 }
-/** 프로젝트에도 전역에도 Slidev 가 없을 때 안내하는 전역 설치 명령 */
-const GLOBAL_INSTALL = 'npm install -g @slidev/cli @slidev/theme-default'
-/** PATH 에 전역 설치된 slidev(npm i -g @slidev/cli)가 있으면 { cmd, bin, hasDefaultTheme }, 없으면 null.
- *  cmd: 터미널에서 칠 명령. 윈도우는 PowerShell 실행 정책에 걸리는 slidev.ps1 대신 slidev.cmd. bin: 찾은 경로(안내용).
- *  hasDefaultTheme: 전역 설치에 @slidev/theme-default 가 같이 있는가 (없으면 테마 없는 덱에서 Slidev 가 설치를 묻는다). */
-function findGlobalSlidev() {
-  const win = process.platform === 'win32'
-  const cmd = win ? 'slidev.cmd' : 'slidev'
-  return new Promise(resolve => {
-    exec(win ? `where ${cmd}` : `command -v ${cmd}`, { windowsHide: true }, (err, stdout) => {
-      const bin = (stdout || '').split(/\r?\n/).map(s => s.trim()).find(Boolean)
-      if (err || !bin) return resolve(null)
-      // 전역 node_modules: 윈도우는 <npm prefix>/node_modules, POSIX 는 bin 심볼릭 링크를 따라간 <prefix>/lib/node_modules
-      let modules = null
-      try {
-        const real = win ? bin : fs.realpathSync(bin)
-        const i = real.lastIndexOf(`${path.sep}node_modules${path.sep}`)
-        modules = i >= 0 ? real.slice(0, i + `${path.sep}node_modules`.length) : path.join(path.dirname(bin), 'node_modules')
-      } catch { /* 링크를 못 따라가면 모른다고 둔다 */ }
-      const hasDefaultTheme = modules ? fs.existsSync(path.join(modules, '@slidev', 'theme-default', 'package.json')) : true
-      resolve({ cmd, bin, hasDefaultTheme })
-    })
-  })
-}
+/** 프로젝트에 Slidev 가 없을 때 그 루트에 설치하는 패키지 */
+const SLIDEV_PKGS = ['@slidev/cli', '@slidev/theme-default']
+/** root 안에 실행할 수 있는 Slidev 가 있는가 (node_modules/.bin/slidev). package.json 에 적혀만 있고 node_modules 가 없으면 false. */
+function hasSlidevBin(root) { return fs.existsSync(path.join(root, 'node_modules', '.bin', 'slidev')) }
 /** 자식 프로세스와 그 아래(npm → node …)를 모두 끝낸다. */
 function killTree(child) {
   if (process.platform === 'win32') exec(`taskkill /pid ${child.pid} /T /F`)
   else { try { process.kill(-child.pid, 'SIGTERM') } catch { child.kill('SIGTERM') } }
 }
-/** 캐시 폴더에 테마를 설치한다. vite 는 vite.config 를 가진 테마(neversink 등)가 필요로 해 함께 둔다.
- *  한 번에 하나씩만 돌린다(같은 폴더에 npm 둘이 겹치지 않게). opts.onOutput(line) 으로 npm 출력을 받고, opts.token 이 취소되면 중단한다('cancelled' 로 reject).
- *  시간 제한은 없다: 윈도우에서 큰 테마는 수 분이 걸릴 수 있다. 실패하면 npm 의 마지막 오류 줄들을 담은 Error 로 reject. */
+/** dir 에서 `npm <args>` 를 돌린다. 한 번에 하나씩만(npm 둘이 겹치지 않게). opts.onOutput(line) 으로 출력을 받고, opts.token 이 취소되면 중단한다('cancelled' 로 reject).
+ *  시간 제한은 없다: 윈도우 첫 설치는 수 분이 걸릴 수 있다. 실패하면 npm 의 마지막 오류 줄들을 담은 Error 로 reject. */
 let installQueue = Promise.resolve()
-function npmInstall(cacheDir, pkgs, opts = {}) {
+function runNpm(dir, args, opts = {}) {
   const run = () => new Promise((resolve, reject) => {
-    cacheInit(cacheDir)
-    const list = [...new Set([...pkgs, 'vite'])].map(p => `"${p}"`).join(' ')
     // shell: 윈도우의 npm.cmd 를 찾기 위해. detached(POSIX): 취소할 때 프로세스 그룹째 끝내기 위해
-    const child = spawn(`npm install --save --loglevel=http ${list}`, { cwd: cacheDir, shell: true, detached: process.platform !== 'win32', windowsHide: true })
+    const child = spawn(`npm ${args}`, { cwd: dir, shell: true, detached: process.platform !== 'win32', windowsHide: true })
     const lines = []
     const take = chunk => { for (const l of chunk.toString().split(/\r?\n/)) if (l.trim()) { lines.push(l); opts.onOutput?.(l) } }
     child.stdout.on('data', take); child.stderr.on('data', take)
@@ -162,6 +140,32 @@ function npmInstall(cacheDir, pkgs, opts = {}) {
   const p = installQueue.then(run, run)
   installQueue = p.catch(() => {})
   return p
+}
+/** 테마 캐시 폴더에 패키지를 설치한다. vite 는 vite.config 를 가진 테마(neversink 등)가 필요로 해 함께 둔다. */
+function npmInstall(cacheDir, pkgs, opts = {}) {
+  cacheInit(cacheDir)
+  const list = [...new Set([...pkgs, 'vite'])].map(p => `"${p}"`).join(' ')
+  return runNpm(cacheDir, `install --save --loglevel=http ${list}`, opts)
+}
+/** 프로젝트 루트에 Slidev 를 설치한다. package.json 에 @slidev/cli 가 이미 적혀 있으면(받아 둔 저장소 등) `npm install` 로 의존성만 받고,
+ *  아니면 @slidev/cli 와 기본 테마를 devDependencies 로 더한다. package.json 이 없으면 최소한으로 만든다 (없으면 npm 이 위 폴더의 package.json 을 찾아 거기 설치한다).
+ *  git 저장소인데 .gitignore 에 node_modules 가 없으면 한 줄 보탠다. 돌려주는 값: { added: 패키지를 새로 더했는가, gitignore: .gitignore 를 고쳤는가 } */
+async function installSlidevLocal(root, opts = {}) {
+  const pkgFile = path.join(root, 'package.json')
+  if (!fs.existsSync(pkgFile)) {
+    const name = path.basename(root).toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '') || 'slides'
+    fs.writeFileSync(pkgFile, JSON.stringify({ name, private: true }, null, 2) + '\n')
+  }
+  const added = !hasSlidevDep(root)
+  const common = '--no-audit --no-fund --loglevel=http'
+  await runNpm(root, added ? `install --save-dev ${common} ${SLIDEV_PKGS.map(p => `"${p}"`).join(' ')}` : `install ${common}`, opts)
+  let gitignore = false
+  if (fs.existsSync(path.join(root, '.git'))) {
+    const gi = path.join(root, '.gitignore')
+    const cur = fs.existsSync(gi) ? fs.readFileSync(gi, 'utf8') : ''
+    if (!/^\/?node_modules\/?\s*$/m.test(cur)) { fs.writeFileSync(gi, cur + (cur && !cur.endsWith('\n') ? '\n' : '') + 'node_modules/\n'); gitignore = true }
+  }
+  return { added, gitignore }
 }
 
 /** defaultTheme 설정값 → 폴더가 실제로 있으면 절대 경로, 아니면 테마 이름 그대로. */
@@ -208,7 +212,7 @@ function waitForServer(url, timeoutMs = 300000, isCancelled = () => false) {
 // ---------- 익스텐션 ----------
 const sessions = new Map()   // 파일 경로 → { terminal, port, url }
 const starting = new Set()   // 아직 시작하는 중인 파일 경로 (Slidev 내려받기 ~ 서버 응답 전). 그동안 같은 파일을 다시 열면 새로 띄우지 않는다
-const notified = new Set()   // "전역 Slidev 로 실행" 안내를 띄운 루트
+const notified = new Set()   // "Slidev 를 설치합니다" 안내를 띄운 루트
 const DEFAULT_COMMAND = 'npx slidev "${file}"'
 
 function activate(context) {
@@ -243,17 +247,45 @@ function activate(context) {
   const cacheDir = path.join(context.globalStorageUri.fsPath, 'themes')    // 내장 테마 캐시
   const out = vscode.window.createOutputChannel('Open with Slidev')   // npm 설치 출력
   context.subscriptions.push(out)
-  /** 테마 캐시에 패키지를 내려받는다: 경과 시간과 받은 패키지 수를 알림에, npm 출력을 출력 창에. 취소하면 'cancelled' 로 던진다. */
-  const installWithProgress = (what, pkgs) => {
+  /** npm 설치를 돌리며 경과 시간과 받은 패키지 수를 알림에, npm 출력을 출력 창에 보여 준다. run(opts) 가 실제 설치. 취소하면 'cancelled' 로 던진다. */
+  const withInstallProgress = (what, manual, run) => {
     out.show(true)
-    out.appendLine(`[Open with Slidev] ${what} 내려받기: cd "${cacheDir}" && npm install --save ${pkgs.join(' ')}`)
+    out.appendLine(`[Open with Slidev] ${what} 내려받기 (직접 하려면: ${manual})`)
     return vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Open with Slidev', cancellable: true }, (progress, token) => {
       const t0 = Date.now(); let fetched = 0
       const tick = () => progress.report({ message: `${what} 내려받는 중 (처음 한 번, 수 분 걸릴 수 있음) · ${Math.round((Date.now() - t0) / 1000)}초 · 패키지 ${fetched}개` })
       tick(); const timer = setInterval(tick, 1000)
       const onOutput = l => { out.appendLine(l); if (/^npm http (fetch|cache) .*\.tgz/.test(l)) fetched++ }   // tarball 하나 = 패키지 하나 (내려받음·캐시 모두)
-      return npmInstall(cacheDir, pkgs, { token, onOutput }).finally(() => clearInterval(timer))
+      return run({ token, onOutput }).finally(() => clearInterval(timer))
     })
+  }
+  const installWithProgress = (what, pkgs) => withInstallProgress(what, `cd "${cacheDir}" && npm install --save ${pkgs.join(' ')}`, opts => npmInstall(cacheDir, pkgs, opts))
+  /** 프로젝트 루트에 실행할 수 있는 Slidev 를 준비한다 (없으면 설치). 성공하면 true, 실패·취소하면 false (안내 표시).
+   *  같은 루트의 파일 여럿을 연달아 열어도 설치는 한 번만 돌고 모두 그 결과를 기다린다. */
+  const slidevInstalls = new Map()   // root → 진행 중인 설치 Promise
+  const ensureSlidevLocal = (root) => {
+    if (hasSlidevBin(root)) return Promise.resolve(true)
+    if (slidevInstalls.has(root)) return slidevInstalls.get(root)
+    const manual = `cd "${root}" && npm install --save-dev ${SLIDEV_PKGS.join(' ')}`
+    const p = (async () => {
+      for (;;) {
+        let r
+        try {
+          r = await withInstallProgress(`Slidev (${path.basename(root)} 에 설치)`, manual, opts => installSlidevLocal(root, opts))
+        } catch (e) {
+          if (e.message === 'cancelled') { out.appendLine('[Open with Slidev] 설치를 취소했습니다. 다시 열면 이어서 받습니다.'); return false }
+          out.appendLine(`[Open with Slidev] 설치 실패: ${e.message}`)
+          const pick = await vscode.window.showErrorMessage(`Open with Slidev: Slidev 설치 실패. 출력 창을 확인하세요. 터미널에서 직접: ${manual}`, '다시 시도')
+          if (pick !== '다시 시도') return false
+          continue   // npm 은 받다 만 node_modules 를 이어서 고친다
+        }
+        if (!hasSlidevBin(root)) { vscode.window.showErrorMessage(`Open with Slidev: 설치는 끝났지만 ${root} 에서 node_modules/.bin/slidev 를 찾지 못했습니다. 터미널에서 직접: ${manual}`); return false }
+        vscode.window.showInformationMessage(`Open with Slidev: ${path.basename(root)} 에 Slidev 를 설치했습니다 (package.json devDependencies, node_modules).${r.gitignore ? ' .gitignore 에 node_modules/ 를 추가했습니다.' : ''} 다음부터는 바로 뜹니다.`)
+        return true
+      }
+    })().finally(() => slidevInstalls.delete(root))
+    slidevInstalls.set(root, p)
+    return p
   }
   /** 카탈로그 테마를 캐시에 준비하고 그 경로를 돌려준다. 실패·취소하면 null (안내 메시지 표시). */
   const ensureTheme = async (entry) => {
@@ -331,25 +363,11 @@ function activate(context) {
     const root = rootSetting
       ? path.resolve(ws || path.dirname(file), rootSetting)
       : (findSlidevRoot(path.dirname(file), ws) || ws || path.dirname(file))
-    // 프로젝트에 Slidev 가 없으면 PATH 의 전역 slidev 를 쓰고, 그것도 없으면 전역 설치 명령을 안내하고 멈춘다 (확장이 대신 내려받지 않는다).
-    // command 를 직접 바꾼 사용자는 그 명령을 그대로 쓴다 (예: pnpm exec slidev).
-    const localSlidev = isSlidevRoot(root)
+    // 프로젝트에 Slidev 가 없으면 처음 한 번 루트에 설치한 뒤 그것으로 띄운다 (launch 에서). command 를 직접 바꾼 사용자는 그 명령을 그대로 쓴다 (예: pnpm exec slidev).
     const customCommand = c.get('command') && c.get('command') !== DEFAULT_COMMAND
-    const globalSlidev = (!localSlidev && !customCommand) ? await findGlobalSlidev() : null
-    if (!localSlidev && !customCommand && !globalSlidev) {
-      const msg = `Open with Slidev: ${path.basename(root)} 에도 전역에도 Slidev 가 없습니다. 터미널에서 한 번 설치한 뒤 다시 여세요: ${GLOBAL_INSTALL}`
-      const pick = await vscode.window.showErrorMessage(msg, '터미널에서 설치', '명령 복사')
-      if (pick === '명령 복사') await vscode.env.clipboard.writeText(GLOBAL_INSTALL)
-      else if (pick === '터미널에서 설치') { const t = vscode.window.createTerminal({ name: 'Slidev 설치' }); t.show(); t.sendText(GLOBAL_INSTALL) }
-      return
-    }
-    if (globalSlidev && !notified.has(root)) {
+    if (!customCommand && !hasSlidevBin(root) && !notified.has(root)) {
       notified.add(root)
-      vscode.window.showInformationMessage(`Open with Slidev: ${path.basename(root)} 에 Slidev 가 없어 전역 설치된 Slidev(${globalSlidev.bin})로 실행합니다.`)
-    }
-    if (globalSlidev && !globalSlidev.hasDefaultTheme && !notified.has('global-theme')) {
-      notified.add('global-theme')
-      vscode.window.showWarningMessage('Open with Slidev: 전역 Slidev 에 기본 테마가 없습니다. 테마 없는 덱은 Slidev 가 터미널에서 설치를 묻습니다. 미리 설치하려면: npm i -g @slidev/theme-default')
+      vscode.window.showInformationMessage(`Open with Slidev: ${path.basename(root)} 에 Slidev 가 없어 그 폴더에 설치합니다 (처음 한 번, 수 분 걸릴 수 있음). 진행 상황은 알림과 출력 창에 보입니다.`)
     }
 
     const previewIn = c.get('previewIn', 'browser')
@@ -360,12 +378,14 @@ function activate(context) {
       return
     }
     starting.add(file)
-    try { await launch(file, root, previewIn, localSlidev, customCommand, globalSlidev) } finally { starting.delete(file) }
+    try { await launch(file, root, previewIn, customCommand) } finally { starting.delete(file) }
   }
 
   /** 파일 하나를 Slidev 로 띄운다 (open 에서 검사가 끝난 뒤). */
-  const launch = async (file, root, previewIn, localSlidev, customCommand, globalSlidev) => {
+  const launch = async (file, root, previewIn, customCommand) => {
     const c = cfg()
+    // 프로젝트의 Slidev 준비 (없으면 설치: 시간 제한 없음, 알림에서 취소 가능)
+    if (!customCommand && !(await ensureSlidevLocal(root))) return
     const existing = sessions.get(file)
     if (existing && existing.terminal.exitStatus === undefined) {
       // 서버가 실제로 응답하는지 먼저 확인한다. 응답하면(살아 있음) 그 터미널·탭을 보여 주고,
@@ -387,9 +407,7 @@ function activate(context) {
     }
     const url = `http://localhost:${port}/`
     const rel = path.relative(root, file)
-    const template = customCommand ? c.get('command')
-      : localSlidev ? DEFAULT_COMMAND
-      : `${globalSlidev.cmd} "\${file}"`     // PATH 의 전역 slidev (전체 경로를 따옴표로 묶으면 PowerShell 에서 & 가 필요해 이름만 쓴다)
+    const template = customCommand ? c.get('command') : DEFAULT_COMMAND
     const command = template.replace(/\$\{file\}/g, rel).replace(/\$\{root\}/g, root)
     const flags = [`--port ${port}`]
     if (previewIn === 'browser') flags.push('--open')
@@ -429,7 +447,7 @@ function activate(context) {
     // 진행 과정을 터미널에 남긴다 (서버가 뜬 뒤에는 보내지 않는다: Slidev 가 터미널 키 입력을 단축키로 받기 때문)
     const log = []
     log.push(`[Open with Slidev] 파일: ${rel}`)
-    log.push(`[Open with Slidev] 프로젝트 루트: ${root}${globalSlidev ? ` (Slidev 없음 → 전역 Slidev 로 실행: ${globalSlidev.bin})` : ''}`)
+    log.push(`[Open with Slidev] 프로젝트 루트: ${root}`)
     for (const b of busy) log.push(`[Open with Slidev] 포트 ${b} 사용 중 → ${b + 1} 시도`)
     log.push(`[Open with Slidev] 포트 ${port} 사용`)
     if (themeArg) log.push(`[Open with Slidev] 테마: ${themeArg}`)
@@ -479,4 +497,4 @@ function activate(context) {
 
 function deactivate() { for (const s of sessions.values()) s.terminal.dispose(); sessions.clear() }
 
-module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, waitForServer, cacheInit, cachedThemePath, findGlobalSlidev, npmInstall, GLOBAL_INSTALL, CATALOG }
+module.exports = { activate, deactivate, findSlidevRoot, globToRegExp, matchesPatterns, frontmatterHasTheme, frontmatterTheme, isPathLike, themeCandidates, catalogEntry, findLocalPackage, resolveTheme, findFreePort, waitForServer, cacheInit, cachedThemePath, hasSlidevBin, runNpm, npmInstall, installSlidevLocal, SLIDEV_PKGS, CATALOG }

@@ -4,6 +4,11 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.5.2] - 2026-10-26
+
+### 변경
+- **프로젝트에 Slidev가 없으면 처음 한 번 그 프로젝트 폴더에 설치하고, 그 안의 Slidev로 띄웁니다.** 0.5.1의 전역 `slidev` 탐색과 설치 안내는 뺐습니다(전역 설치는 시작이 느렸습니다). 루트(워크스페이스 폴더, 없으면 md 파일 폴더)에 `@slidev/cli`와 기본 테마를 `devDependencies`로 넣고, `package.json`이 없으면 만들며, git 저장소인데 `.gitignore`에 `node_modules`가 없으면 한 줄 보탭니다. `package.json`에 `@slidev/cli`만 적혀 있고 `node_modules`가 없으면 `npm install`로 채웁니다. 설치 중에는 알림에 경과 시간과 받은 패키지 수가, 출력 창 **Open with Slidev**에 npm 출력이 보이고, 취소와 **다시 시도**가 됩니다. 다음부터는 바로 뜹니다.
+
 ## [0.5.1] - 2026-10-26
 
 ### 변경
