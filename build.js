@@ -27,6 +27,13 @@ const singleFile = {
     order: 'pre',
     handler: html => html.replace(/<link\b[^>]*>\s*/g, tag => /rel="preload"/.test(tag) && /as="image"/.test(tag) ? '' : tag),
   },
+  // @shikijs/vitepress-twoslash patches floating-vue's VMenu, whose shape changed in floating-vue 5.4, so every Slidev 53 page
+  // logs "Failed to patch FloatingVue". The patch only hides popups while dragging; drop the log so the built page stays quiet.
+  transform(code, id) {
+    if (!id.includes('vitepress-twoslash')) return null
+    const out = code.replace(/console\.error\(\s*["'`]Failed to patch FloatingVue["'`]\s*,\s*\w+\s*\);?/g, '')
+    return out === code ? null : { code: out, map: null }
+  },
   // order 'post': run after Vite has filled in its preload placeholders (__VITE_PRELOAD__) in the chunk code.
   generateBundle: {
     order: 'post',
