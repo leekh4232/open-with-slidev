@@ -4,6 +4,12 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.8.0] - 2026-10-28
+
+### 추가
+- **Teacher Mode (설정 `openWithSlidev.teacherMode`, 기본 꺼짐).** 켜면 **Build with Slidev** 하위 메뉴 끝에 구분선과 함께 **hossam build**·**jussam build**가 생깁니다(편집기 본문·편집기 탭·탐색기 메뉴 모두). 두 메뉴는 원본 md를 그대로 두고, 강사명 자리(`{teacher}` 또는 상대 강사 이름)를 해당 강사 이름으로 바꾼 복사본으로 빌드해 HTML 한 파일과 **비밀번호가 걸린 PDF**를 만듭니다. 결과는 `slides.hossam.html`·`slides.hossam.pdf`(jussam은 `slides.jussam.*`)처럼 선생님별로 따로 나와 서로 덮지 않습니다. hossam은 **이광호**, jussam은 **주영아**로 치환합니다.
+- PDF 비밀번호는 Slidev가 직접 걸지 못해, 내보낸 PDF를 qpdf로 AES-256 암호화합니다. 처음 한 번 `@neslinesli93/qpdf-wasm`를 익스텐션 전역 저장소(`globalStorage/leekh.open-with-slidev/tools`)에 내려받습니다(시스템에 qpdf를 따로 깔 필요 없음). 비밀번호를 거는 데 실패하면 암호화되지 않은 PDF를 남기지 않습니다.
+
 ## [0.7.0] - 2026-10-27
 
 ### 추가

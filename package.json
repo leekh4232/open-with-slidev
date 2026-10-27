@@ -50,6 +50,16 @@
         "category": "Build with Slidev"
       },
       {
+        "command": "openWithSlidev.teacher.hossam",
+        "title": "hossam build (강사명 이광호 · HTML + 비밀번호 PDF)",
+        "category": "Build with Slidev"
+      },
+      {
+        "command": "openWithSlidev.teacher.jussam",
+        "title": "jussam build (강사명 주영아 · HTML + 비밀번호 PDF)",
+        "category": "Build with Slidev"
+      },
+      {
         "command": "openWithSlidev.downloadThemes",
         "title": "내장 테마 미리 내려받기",
         "category": "Slidev"
@@ -118,6 +128,16 @@
         {
           "command": "openWithSlidev.export.md",
           "group": "2_export@4"
+        },
+        {
+          "command": "openWithSlidev.teacher.hossam",
+          "when": "openWithSlidev.teacherMode",
+          "group": "3_teacher@1"
+        },
+        {
+          "command": "openWithSlidev.teacher.jussam",
+          "when": "openWithSlidev.teacherMode",
+          "group": "3_teacher@2"
         }
       ]
     },
@@ -271,6 +291,11 @@
           "type": "boolean",
           "default": false,
           "description": "md 편집기를 닫으면 그 파일의 Slidev 서버(터미널)도 끈다"
+        },
+        "openWithSlidev.teacherMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "켜면 Build with Slidev 하위 메뉴 끝에 구분선과 함께 'hossam build'·'jussam build'가 보인다. 둘 다 md 의 강사명 자리('{teacher}' 또는 상대 강사 이름)를 해당 강사 이름으로 바꿔 복사본으로 빌드하고(원본은 그대로), HTML 한 파일과 비밀번호가 걸린 PDF 를 slides.hossam.html·slides.hossam.pdf 처럼 만든다. PDF 비밀번호는 qpdf 로 거는데, 처음 한 번 qpdf-wasm 을 캐시에 내려받는다"
         }
       }
     }

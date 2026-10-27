@@ -24,6 +24,7 @@
 - **발표자 모드**: 원하면 `/presenter` 화면도 함께 엽니다.
 - **HTML 파일 하나로 빌드**: md 옆에 같은 이름의 `.html` 하나를 만듭니다. 서버 없이 더블클릭으로 열리고, 메일이나 메신저로 그 파일만 보내면 됩니다.
 - **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. 처음 한 번 Playwright(Chromium)를 프로젝트에 설치합니다.
+- **Teacher Mode(선택)**: 켜면 하위 메뉴에 `hossam build`·`jussam build`가 더 보입니다. 강사명 자리를 선생님 이름으로 바꾼 복사본으로 HTML과 비밀번호가 걸린 PDF를 만듭니다(원본 md는 그대로).
 - **파일마다 터미널 하나**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주거나(기본) 서버를 다시 띄웁니다.
 
 ## 준비물
@@ -74,6 +75,16 @@ Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아
 - `slides-png/` 폴더는 내보낼 때마다 비우고 다시 만듭니다. PNG가 아닌 파일이 들어 있으면 먼저 묻습니다. PDF · PPTX는 같은 이름 파일을 덮어씁니다.
 - 내보내는 동안 알림에 경과 시간이, 출력 창 **Open with Slidev**에 Slidev 출력이 보이고, 알림에서 취소할 수 있습니다. 끝나면 **열기** · **폴더에서 보기** 버튼이 나옵니다. HTML · PDF 등 서로 다른 형식은 동시에 내보낼 수 있습니다.
 
+#### Teacher Mode (hossam · jussam build)
+
+설정 `openWithSlidev.teacherMode`를 켜면 **Build with Slidev** 하위 메뉴 끝에 구분선과 함께 `hossam build`·`jussam build`가 보입니다(편집기 본문 · 편집기 탭 · 탐색기 메뉴 모두). 강의 덱 하나로 선생님별 배포본을 만들 때 씁니다.
+
+- **강사명 치환**: `hossam build`는 `{teacher}`와 `주영아`를 **이광호**로, `jussam build`는 `{teacher}`와 `이광호`를 **주영아**로 바꿉니다. 덱에서 강사 이름이 들어갈 자리에 `{teacher}`를 적어 두면 두 배포본을 한 소스로 관리할 수 있습니다.
+- **원본은 그대로**: 치환은 같은 폴더에 만든 임시 복사본에서만 일어나고, 빌드가 끝나면 지웁니다. 원본 md와 `{teacher}` 자리는 건드리지 않습니다.
+- **결과**(`slides.md` 기준): `slides.hossam.html`·`slides.hossam.pdf`(jussam은 `slides.jussam.*`). 선생님별로 이름이 달라 서로 덮지 않습니다. HTML은 위 [HTML](#html)과 같은 한 파일이고, 테마는 **Open with Slidev**와 같은 규칙으로 정합니다.
+- **PDF 비밀번호**: Slidev는 PDF에 비밀번호를 걸지 못해, 내보낸 PDF를 [qpdf](https://github.com/qpdf/qpdf)로 AES-256 암호화합니다. 선생님마다 익스텐션에 정해진 비밀번호가 있고, 열 때 그 비밀번호를 물어봅니다. 처음 한 번 `@neslinesli93/qpdf-wasm`를 전역 저장소(`globalStorage/leekh.open-with-slidev/tools`)에 내려받습니다(시스템에 qpdf를 깔 필요 없음). 비밀번호를 거는 데 실패하면 암호화되지 않은 PDF를 남기지 않습니다.
+- 비밀번호는 익스텐션 소스에 고정돼 있어, 소스를 볼 수 있는 사람에게는 가려지지 않습니다. 아무나 바로 열지 못하게 막는 용도입니다.
+
 ## 내장 테마
 
 아래 이름을 md 프런트매터에 쓰거나(`theme: terminal`), 설정 `openWithSlidev.defaultTheme` 드롭다운에서 고르면 됩니다. 프로젝트에 해당 패키지가 이미 설치돼 있으면 그것을 쓰고, 없으면 처음 한 번 내려받아 캐시에 둔 뒤 `--theme` 절대 경로로 넘깁니다.
@@ -121,6 +132,7 @@ sidebar: true      # 생략하면 켬
 | `openWithSlidev.openPresenter` | `false` | 발표자 모드(`/presenter`)도 외부 브라우저로 함께 엽니다. |
 | `openWithSlidev.filePatterns` | `["**/*.md"]` | 편집기 우클릭 메뉴를 보일 파일(glob, 워크스페이스 기준). 폴더 없이 쓰면 파일 이름만 비교합니다. 탐색기 메뉴는 `.md` 전체에 보이고 실행 시 검사합니다. |
 | `openWithSlidev.stopOnClose` | `false` | md 편집기를 닫으면 그 파일의 서버(터미널)도 끕니다. |
+| `openWithSlidev.teacherMode` | `false` | 켜면 **Build with Slidev** 하위 메뉴 끝에 구분선과 함께 `hossam build`·`jussam build`가 보입니다. 아래 [Teacher Mode](#teacher-mode-hossam--jussam-build) 참고. |
 
 설정 예시:
 
