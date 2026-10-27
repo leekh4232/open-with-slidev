@@ -514,7 +514,7 @@ function activate(context) {
     const take = chunk => { for (const l of chunk.toString().replace(/\x1b\[[0-9;]*m/g, '').split(/[\r\n]+/)) if (l.trim()) { out.appendLine(l); onLine?.(l) } }
     child.stdout.on('data', take); child.stderr.on('data', take)
     const sub = ctoken.onCancellationRequested(() => killTree(child))
-    const done = r => { clearInterval(timer); sub.dispose(); resolve(r) }
+    const done = r => { clearInterval(timer); sub.dispose(); if (r === false) out.show(true); resolve(r) }   // 실패했을 때만 출력 창을 띄운다 (정상 빌드는 우측 하단 알림만)
     child.on('error', e => { out.appendLine(e.message); done(false) })
     child.on('close', code => done(ctoken.isCancellationRequested ? 'cancelled' : code === 0))
   }))
@@ -540,7 +540,6 @@ function activate(context) {
       if (!(await ensureSlidevLocal(root))) return
       const { themeArg } = await themeFor(file, root)
       const token = Buffer.from(JSON.stringify({ entry: file, root, out: outFile, theme: themeArg }), 'utf8').toString('base64url')
-      out.show(true)
       out.appendLine(`[Build with Slidev] ${file} → ${outFile}`)
       const skipped = []
       const result = await runWithProgress(`${path.basename(file)} 빌드 중`, `node "${builder}" ${token}`, root, l => { if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) })
@@ -620,7 +619,6 @@ function activate(context) {
       const { themeArg } = await themeFor(file, root)
       if (format === 'md') fs.mkdirSync(path.dirname(outPath), { recursive: true })
       const command = `npx slidev export "${path.relative(root, file)}" --format ${format} --output "${outPath}"${themeArg ? ` --theme "${themeArg}"` : ''}`
-      out.show(true)
       out.appendLine(`[Build with Slidev] ${file} → ${outPath}`)
       out.appendLine(`$ ${command}`)
       const result = await runWithProgress(`${path.basename(file)} → ${fmt.name} 내보내는 중`, command, root)
@@ -665,7 +663,6 @@ function activate(context) {
       for (const f of spec.from) replaced = replaced.split(f).join(spec.name)
       fs.writeFileSync(tmpMd, replaced)
       const { themeArg } = await themeFor(file, root)
-      out.show(true)
       out.appendLine(`[Build with Slidev] ${variant} (강사명 ${spec.name}): ${file} → ${htmlOut}, ${pdfOut}`)
       // 1) HTML 한 파일
       const htmlToken = Buffer.from(JSON.stringify({ entry: tmpMd, root, out: htmlOut, theme: themeArg }), 'utf8').toString('base64url')

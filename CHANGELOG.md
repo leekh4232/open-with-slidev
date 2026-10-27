@@ -4,6 +4,11 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.8.1] - 2026-10-28
+
+### 변경
+- **빌드·내보내기(HTML·PDF·PPTX·PNG·Markdown·Teacher Mode)를 할 때 출력 창 Open with Slidev가 자동으로 열리지 않습니다.** 상태는 전부터 있던 우측 하단 진행 알림(경과 시간·취소)으로 보여 줍니다. 빌드 로그는 출력 창에 그대로 쌓이고, **빌드가 실패했을 때만** 출력 창이 자동으로 열려 원인을 보여 줍니다. (처음 한 번 Slidev·Playwright·qpdf를 내려받는 설치 과정은 그대로 출력 창에 진행 상황이 보입니다.)
+
 ## [0.8.0] - 2026-10-28
 
 ### 추가
