@@ -181,7 +181,7 @@
           ],
           "default": "focus",
           "enumDescriptions": [
-            "이미 띄운 터미널을 보여 준다",
+            "이미 띄운 터미널을 보여 주고 슬라이드를 다시 연다 (previewIn 이 browser 면 브라우저 새 탭, vscode 면 Simple Browser)",
             "서버를 끄고 다시 띄운다"
           ],
           "description": "같은 파일에서 다시 실행했을 때"

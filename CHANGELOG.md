@@ -4,6 +4,14 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [미배포]
+
+### 변경
+- **서버가 이미 떠 있는 md 파일에서 다시 Open with Slidev를 실행하면 브라우저에 슬라이드를 새로 띄웁니다.** `openWithSlidev.previewIn`이 `browser`(기본)일 때 해당합니다. 전에는 터미널만 보여 줘서 브라우저 탭을 닫은 뒤에는 아무 일도 일어나지 않는 것처럼 보였습니다. `vscode`일 때는 지금처럼 Simple Browser를 다시 엽니다. `openWithSlidev.onRerun`이 `focus`(기본)일 때의 동작이며, `restart`는 그대로입니다.
+
+### 수정
+- **업데이트 직후 처음 실행할 때 "openWithSlidev.slidevPath은(는) 등록된 구성이 아니므로 사용자 설정에 쓸 수 없습니다" 오류로 Slidev가 뜨지 않던 문제를 고쳤습니다.** 창을 다시 불러오기 전에는 새 설정이 아직 등록되지 않아 경로 기록이 실패할 수 있습니다. 이제 기록에 실패해도 찾은 전역 Slidev로 그대로 실행하고, 출력 창에 한 줄만 남깁니다. 경로는 다음 실행 때 다시 찾아 기록합니다.
+
 ## [0.8.4] - 2026-10-28
 
 ### 추가

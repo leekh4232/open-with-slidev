@@ -331,14 +331,24 @@ function activate(context) {
   const installCmd = `${NPM} install -g ${GLOBAL_PKGS.join(' ')}`
   const globalFromNpm = async () => { const g = await npmGlobalRoot(); const d = g && path.join(g, '@slidev', 'cli'); return slidevPkgOk(d) ? d : null }
   let globalSlidev = null   // 진행 중인 탐지·설치 Promise
+  /** 찾은 경로를 설정에 기록한다. 업데이트 직후 창을 다시 불러오기 전에는 설정이 아직 등록되지 않아 쓰기가 실패할 수 있다.
+   *  기록은 캐시일 뿐이라 실패해도 실행은 계속한다 (다음에 다시 찾는다). */
+  const recordSlidevPath = async dir => {
+    try {
+      await cfg().update('slidevPath', dir, vscode.ConfigurationTarget.Global)
+      return true
+    } catch (e) {
+      out.appendLine(`[Open with Slidev] 설정 openWithSlidev.slidevPath 에 기록하지 못했습니다 (${e.message}). 이번에는 ${dir} 로 실행합니다.`)
+      return false
+    }
+  }
   const ensureSlidevGlobal = () => {
     if (globalSlidev) return globalSlidev
     globalSlidev = (async () => {
       for (;;) {
         const found = await detectGlobalSlidev(cfg().get('slidevPath'))
         if (found) {
-          if (!found.recorded) {
-            await cfg().update('slidevPath', found.dir, vscode.ConfigurationTarget.Global)
+          if (!found.recorded && await recordSlidevPath(found.dir)) {
             out.appendLine(`[Open with Slidev] 전역 Slidev: ${found.dir} → 설정 openWithSlidev.slidevPath 에 기록`)
           }
           return found.dir
@@ -348,8 +358,8 @@ function activate(context) {
         if (r === 'cancelled') { out.appendLine('[Open with Slidev] 설치를 취소했습니다.'); return null }
         const after = await detectGlobalSlidev('')
         if (after) {
-          await cfg().update('slidevPath', after.dir, vscode.ConfigurationTarget.Global)
-          vscode.window.showInformationMessage(`Open with Slidev: Slidev 를 설치했습니다 (${after.dir}). 설정 openWithSlidev.slidevPath 에 기록했고, 다음부터는 바로 뜹니다.`)
+          const recorded = await recordSlidevPath(after.dir)
+          vscode.window.showInformationMessage(`Open with Slidev: Slidev 를 설치했습니다 (${after.dir}).${recorded ? ' 설정 openWithSlidev.slidevPath 에 기록했고, 다음부터는 바로 뜹니다.' : ''}`)
           return after.dir
         }
         const pick = await vscode.window.showErrorMessage(`Open with Slidev: 설치가 끝났지만 전역 Slidev 를 찾지 못했습니다. 터미널 출력을 확인하세요. 직접 설치하려면: ${installCmd} (권한 오류면 sudo). 이미 설치돼 있으면 설정 openWithSlidev.slidevPath 에 @slidev/cli 폴더 경로를 적으세요.`, '다시 시도')
@@ -494,6 +504,7 @@ function activate(context) {
       if (alive && c.get('onRerun', 'focus') !== 'restart') {
         existing.terminal.show(previewIn === 'vscode')
         if (previewIn === 'vscode') await vscode.commands.executeCommand('simpleBrowser.show', existing.url, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false })
+        else vscode.env.openExternal(vscode.Uri.parse(existing.url))   // 브라우저 탭을 닫았어도 다시 볼 수 있게
         return
       }
       existing.terminal.dispose(); sessions.delete(file)

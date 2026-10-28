@@ -25,7 +25,7 @@
 - **HTML 파일 하나로 빌드**: md 옆에 같은 이름의 `.html` 하나를 만듭니다. 서버 없이 더블클릭으로 열리고, 메일이나 메신저로 그 파일만 보내면 됩니다. 탐색기에서 md를 여러 개 선택하면 차례로 모두 만듭니다.
 - **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. 처음 한 번 Playwright(Chromium)를 전역으로 설치합니다.
 - **Teacher Mode(선택)**: 켜면 하위 메뉴에 `hossam build`·`jussam build`가 더 보입니다. 강사명 자리를 선생님 이름으로 바꾼 복사본으로 HTML과 비밀번호가 걸린 PDF를 만듭니다(원본 md는 그대로).
-- **터미널에서 실행**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주거나(기본) 서버를 다시 띄웁니다.
+- **터미널에서 실행**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주고 슬라이드를 브라우저(또는 Simple Browser)에 다시 띄우거나(기본) 서버를 다시 띄웁니다.
 
 ## 준비물
 
@@ -127,7 +127,7 @@ sidebar: true      # 생략하면 켬
 | `openWithSlidev.command` | `node "${slidev}" "${file}"` | 실행 명령. `${slidev}`는 쓸 Slidev 실행 파일(프로젝트의 `node_modules/@slidev/cli`가 있으면 그것, 없으면 전역 설치의 `bin/slidev.mjs`), `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 직접 바꾸면 그 명령을 그대로 씁니다. 예: `pnpm exec slidev "${file}"` |
 | `openWithSlidev.slidevPath` | (자동) | 전역 Slidev의 `@slidev/cli` 패키지 폴더(예: `/opt/homebrew/lib/node_modules/@slidev/cli`). 비우면 처음 실행 때 자동으로 찾아 기록하고, 없으면 터미널에서 설치한 뒤 기록합니다. 미리 적어 둘 수 있습니다. 사용자 설정에 기기별로 저장됩니다. |
 | `openWithSlidev.extraArgs` | (없음) | 명령 끝에 덧붙일 인자. 예: `--remote`(다른 기기에서 접속), `--log info` |
-| `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고, `restart`는 서버를 끄고 다시 띄웁니다. |
+| `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고 슬라이드를 `previewIn`에 맞춰 다시 엽니다(`browser`면 브라우저 새 탭, `vscode`면 Simple Browser). `restart`는 서버를 끄고 다시 띄웁니다. |
 | `openWithSlidev.port` | `3030` | 시작 포트. 다른 프로그램이 쓰고 있으면 1씩 올려 최대 3회 다시 시도합니다. |
 | `openWithSlidev.projectRoot` | (자동) | 프로젝트 루트. md 상대 경로와 테마 경로의 기준이고, 여기(또는 위쪽)에 `node_modules/@slidev/cli`가 있으면 그것으로 실행합니다. 비우면 md 파일 위쪽에서 Slidev가 설치된 폴더를 찾고, 없으면 워크스페이스 폴더입니다. 절대 경로 또는 워크스페이스 기준 상대 경로. |
 | `openWithSlidev.defaultTheme` | `""` (지정 안 함) | 프런트매터에 `theme`가 없을 때 쓸 내장 테마(드롭다운). 처음 쓸 때 npm에서 내려받습니다. "지정 안 함"이면 Slidev 기본 동작입니다. 프런트매터의 `theme`가 우선합니다. |
