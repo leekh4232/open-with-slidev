@@ -599,7 +599,10 @@ function activate(context) {
   const builder = path.join(context.extensionPath, 'build.js')
   const encrypter = path.join(context.extensionPath, 'encrypt.js')   // PDF 비밀번호 설정기 (Teacher Mode)
   const building = new Set()   // 빌드·내보내기 중인 "파일 경로|형식"
-  const buildHtml = async (uri) => {
+  /** 빌드·내보내기 함수의 공통 반환값: 결과 파일 경로(성공) · false(실패) · 'cancelled'(취소, 여러 파일 처리를 멈춘다) · undefined(건너뜀).
+   *  opts.batch 가 있으면("2/5") 여러 파일 중 하나로 돌고 있는 것: 알림 제목에 번호를 붙이고, 파일마다 뜨던 결과·실패 알림은 생략한다 (끝에 한 번 알린다). */
+  const tag = opts => opts.batch ? `(${opts.batch}) ` : ''
+  const buildHtml = async (uri, opts = {}) => {
     const t = await prepare(uri)
     if (!t) return
     const { file, root } = t
@@ -614,18 +617,20 @@ function activate(context) {
     building.add(key)
     try {
       const pkg = await ensureSlidev(root)
-      if (!pkg) return
+      if (!pkg) return 'cancelled'
       const { themeArg } = await themeFor(file, root)
       const token = Buffer.from(JSON.stringify({ entry: file, root, out: outFile, theme: themeArg, slidevPath: pkg }), 'utf8').toString('base64url')
       out.appendLine(`[Build with Slidev] ${file} → ${outFile}`)
       const skipped = []
-      const result = await runWithProgress(`${path.basename(file)} 빌드 중`, `node "${builder}" ${token}`, root, l => { if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) })
-      if (result === 'cancelled') return
-      if (!result) { vscode.window.showErrorMessage('Build with Slidev: 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.'); return }
+      const result = await runWithProgress(`${tag(opts)}${path.basename(file)} 빌드 중`, `node "${builder}" ${token}`, root, l => { if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) })
+      if (result === 'cancelled') return 'cancelled'
+      if (!result) { if (!opts.batch) vscode.window.showErrorMessage('Build with Slidev: 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.'); return false }
+      if (opts.batch) return outFile
       const note = skipped.length ? ` public 폴더 파일 ${skipped.length}개는 넣지 못했습니다(출력 창의 SKIPPED).` : ''
       const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(outFile)} 를 만들었습니다. 이 파일 하나만 있으면 더블클릭으로 열립니다.${note}`, '브라우저로 열기', '폴더에서 보기')
       if (pick === '브라우저로 열기') vscode.env.openExternal(vscode.Uri.file(outFile))
       else if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outFile))
+      return outFile
     } finally { building.delete(key) }
   }
 
@@ -680,7 +685,7 @@ function activate(context) {
     md: { name: 'Markdown', out: f => path.join(f.replace(/\.md$/i, '-md'), path.basename(f)) },
   }
   /** slidev export 로 md 옆에 내보낸다. */
-  const exportAs = async (uri, format) => {
+  const exportAs = async (uri, format, opts = {}) => {
     const fmt = EXPORTS[format]
     const t = await prepare(uri)
     if (!t) return
@@ -696,22 +701,24 @@ function activate(context) {
     building.add(key)
     try {
       const pkg = await ensureSlidev(root)
-      if (!pkg) return
-      if (!(await ensurePlaywright(root))) return
+      if (!pkg) return 'cancelled'
+      if (!(await ensurePlaywright(root))) return 'cancelled'
       const { themeArg } = await themeFor(file, root)
       if (format === 'md') fs.mkdirSync(path.dirname(outPath), { recursive: true })
       const command = `node "${slidevBin(pkg)}" export "${path.relative(root, file)}" --format ${format} --output "${outPath}"${themeArg ? ` --theme "${themeArg}"` : ''}`
       out.appendLine(`[Build with Slidev] ${file} → ${outPath}`)
       out.appendLine(`$ ${command}`)
-      const result = await runWithProgress(`${path.basename(file)} → ${fmt.name} 내보내는 중`, command, root)
-      if (result === 'cancelled') return
-      if (!result) { vscode.window.showErrorMessage(`Build with Slidev: ${fmt.name} 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return }
+      const result = await runWithProgress(`${tag(opts)}${path.basename(file)} → ${fmt.name} 내보내는 중`, command, root)
+      if (result === 'cancelled') return 'cancelled'
+      if (!result) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${fmt.name} 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
+      if (opts.batch) return outPath
       const shown = fmt.dir ? `${path.basename(outPath)} 폴더` : format === 'md' ? `${path.basename(path.dirname(outPath))} 폴더(md 와 슬라이드 PNG)` : path.basename(outPath)
       const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${shown} 를 만들었습니다.`, '열기', '폴더에서 보기')
       if (pick === '열기') {
         if (format === 'md') vscode.window.showTextDocument(vscode.Uri.file(outPath))
         else vscode.env.openExternal(vscode.Uri.file(outPath))
       } else if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outPath))
+      return outPath
     } finally { building.delete(key) }
   }
 
@@ -722,7 +729,7 @@ function activate(context) {
     jussam: { name: '주영아', from: ['이광호', '{teacher}'], password: 'ju123!@#' },
   }
   /** 강사명 치환 복사본으로 HTML + 비밀번호 PDF 를 만든다 (<이름>.<variant>.html, <이름>.<variant>.pdf). */
-  const teacherBuild = async (uri, variant) => {
+  const teacherBuild = async (uri, variant, opts = {}) => {
     const spec = TEACHER[variant]
     const t = await prepare(uri)
     if (!t) return
@@ -738,10 +745,10 @@ function activate(context) {
     building.add(key)
     try {
       const pkg = await ensureSlidev(root)
-      if (!pkg) return
+      if (!pkg) return 'cancelled'
       // 강사명 치환 복사본 만들기 (split/join: 정규식 특수문자 걱정 없이 리터럴 치환)
       let text
-      try { text = fs.readFileSync(file, 'utf8') } catch (e) { vscode.window.showErrorMessage(`Build with Slidev: ${path.basename(file)} 를 읽지 못했습니다: ${e.message}`); return }
+      try { text = fs.readFileSync(file, 'utf8') } catch (e) { vscode.window.showErrorMessage(`Build with Slidev: ${path.basename(file)} 를 읽지 못했습니다: ${e.message}`); return false }
       let replaced = text
       for (const f of spec.from) replaced = replaced.split(f).join(spec.name)
       fs.writeFileSync(tmpMd, replaced)
@@ -749,38 +756,61 @@ function activate(context) {
       out.appendLine(`[Build with Slidev] ${variant} (강사명 ${spec.name}): ${file} → ${htmlOut}, ${pdfOut}`)
       // 1) HTML 한 파일
       const htmlToken = Buffer.from(JSON.stringify({ entry: tmpMd, root, out: htmlOut, theme: themeArg, slidevPath: pkg }), 'utf8').toString('base64url')
-      const htmlRes = await runWithProgress(`${base} → ${variant} HTML 빌드 중`, `node "${builder}" ${htmlToken}`, root)
-      if (htmlRes === 'cancelled') return
-      if (!htmlRes) { vscode.window.showErrorMessage(`Build with Slidev: ${variant} HTML 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return }
+      const htmlRes = await runWithProgress(`${tag(opts)}${base} → ${variant} HTML 빌드 중`, `node "${builder}" ${htmlToken}`, root)
+      if (htmlRes === 'cancelled') return 'cancelled'
+      if (!htmlRes) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} HTML 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
       // 2) PDF (slidev export) — Playwright 필요
-      if (!(await ensurePlaywright(root))) return
+      if (!(await ensurePlaywright(root))) return 'cancelled'
       const pdfCmd = `node "${slidevBin(pkg)}" export "${relTmp}" --format pdf --output "${pdfOut}"${themeArg ? ` --theme "${themeArg}"` : ''}`
       out.appendLine(`$ ${pdfCmd}`)
-      const pdfRes = await runWithProgress(`${base} → ${variant} PDF 내보내는 중`, pdfCmd, root)
-      if (pdfRes === 'cancelled') { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return }
-      if (!pdfRes) { vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return }
+      const pdfRes = await runWithProgress(`${tag(opts)}${base} → ${variant} PDF 내보내는 중`, pdfCmd, root)
+      if (pdfRes === 'cancelled') { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return 'cancelled' }
+      if (!pdfRes) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
       // 3) PDF 비밀번호 (qpdf-wasm, 별도 프로세스)
       const pkgDir = await ensureQpdf()
-      if (!pkgDir) { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return }
+      if (!pkgDir) { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return 'cancelled' }
       const encToken = Buffer.from(JSON.stringify({ pkgDir, input: pdfOut, output: pdfOut, password: spec.password }), 'utf8').toString('base64url')
-      const encRes = await runWithProgress(`${variant} PDF 비밀번호 설정 중`, `node "${encrypter}" ${encToken}`, root)
+      const encRes = await runWithProgress(`${tag(opts)}${variant} PDF 비밀번호 설정 중`, `node "${encrypter}" ${encToken}`, root)
       if (encRes === 'cancelled' || !encRes) {
         try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ }   // 암호 안 걸린 PDF 를 남기지 않는다
-        if (!encRes) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.`)
-        return
+        if (!encRes && !opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.`)
+        return encRes === 'cancelled' ? 'cancelled' : false
       }
+      if (opts.batch) return pdfOut
       const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${variant} — ${path.basename(htmlOut)} 와 ${path.basename(pdfOut)}(비밀번호 설정)를 만들었습니다.`, '폴더에서 보기')
       if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(pdfOut))
+      return pdfOut
     } finally {
       try { fs.rmSync(tmpMd, { force: true }) } catch { /* 없으면 그만 */ }
       building.delete(key)
     }
   }
 
+  /** 탐색기에서 md 를 여러 개 선택해 실행하면 VS Code 가 두 번째 인자로 선택 목록(uris)을 준다. 둘 이상이면 차례로 하나씩 돌리고(동시에 돌리면 Vite·Chromium 이 메모리를 많이 쓴다)
+   *  끝에 한 번만 결과를 알린다. 하나를 취소하면 남은 파일은 하지 않는다. 편집기·명령 팔레트에서는 지금처럼 파일 하나. */
+  const forEachSelected = fn => async (uri, uris) => {
+    const list = Array.isArray(uris) ? uris.filter(u => u instanceof vscode.Uri && u.scheme === 'file' && /\.md$/i.test(u.fsPath)) : []
+    if (list.length <= 1) return fn(uri, {})
+    const results = []
+    for (let i = 0; i < list.length; i++) {
+      const r = await fn(list[i], { batch: `${i + 1}/${list.length}` })
+      results.push({ file: list[i].fsPath, r })
+      if (r === 'cancelled') break
+    }
+    const done = results.filter(x => typeof x.r === 'string')
+    const failed = results.filter(x => x.r === false)
+    const stopped = results.length < list.length
+    const msg = `Build with Slidev: ${list.length}개 중 ${done.length}개 완료` +
+      (failed.length ? `, 실패 ${failed.length}개 (${failed.map(x => path.basename(x.file)).join(', ')}). 출력 창 Open with Slidev 를 확인하세요.` : '') +
+      (stopped ? ` 취소해서 나머지 ${list.length - results.length}개는 하지 않았습니다.` : '')
+    const show = failed.length ? vscode.window.showWarningMessage : vscode.window.showInformationMessage
+    const pick = await show(msg, ...(done.length ? ['폴더에서 보기'] : []))
+    if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(done[0].r))
+  }
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.open', open))
-  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', buildHtml))
-  for (const format of Object.keys(EXPORTS)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.export.${format}`, uri => exportAs(uri, format)))
-  for (const variant of Object.keys(TEACHER)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.teacher.${variant}`, uri => teacherBuild(uri, variant)))
+  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', forEachSelected(buildHtml)))
+  for (const format of Object.keys(EXPORTS)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.export.${format}`, forEachSelected((uri, opts) => exportAs(uri, format, opts))))
+  for (const variant of Object.keys(TEACHER)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.teacher.${variant}`, forEachSelected((uri, opts) => teacherBuild(uri, variant, opts))))
   context.subscriptions.push(vscode.window.onDidCloseTerminal(t => {
     for (const [k, v] of sessions) if (v.terminal === t) sessions.delete(k)
   }))

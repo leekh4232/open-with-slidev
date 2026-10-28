@@ -3,7 +3,7 @@
 > 마크다운 파일을 우클릭 한 번으로 Slidev 슬라이드로 열고, HTML 한 파일 · PDF · PPTX · PNG · Markdown으로 내보내는 VS Code 확장. Slidev를 미리 설치하지 않아도 된다. (A VS Code extension that opens a Markdown file as a Slidev deck with one right-click and exports it to a single self-contained HTML file, PDF, PPTX, PNG or Markdown.)
 
 - 확장 ID: `leekh.open-with-slidev` · VS Code 1.80 이상 · Node.js 18 이상 · MIT
-- 사용: `.md` 파일 우클릭 → **Open with Slidev**(서버를 띄우고 브라우저 또는 Simple Browser로 열기) 또는 **Build with Slidev** 하위 메뉴(HTML: md 옆에 같은 이름의 `.html` 하나 · PDF · PPTX · PNG 폴더 · Markdown+PNG 폴더). 명령 팔레트의 `Slidev: Open with Slidev`와 `Build with Slidev: <형식>`도 같다.
+- 사용: `.md` 파일 우클릭 → **Open with Slidev**(서버를 띄우고 브라우저 또는 Simple Browser로 열기) 또는 **Build with Slidev** 하위 메뉴(HTML: md 옆에 같은 이름의 `.html` 하나 · PDF · PPTX · PNG 폴더 · Markdown+PNG 폴더). 탐색기에서 md를 여러 개 선택해 실행하면 차례로 모두 처리한다. 명령 팔레트의 `Slidev: Open with Slidev`와 `Build with Slidev: <형식>`도 같다.
 - Slidev 탐색: md 위쪽 프로젝트의 `node_modules/@slidev/cli`를 쓰고, 없으면 전역(`npm -g`) Slidev를 쓴다. 전역에도 없으면 처음 한 번 터미널에서 `npm install -g @slidev/cli @slidev/theme-default`를 돌리고, 찾은 패키지 폴더를 설정 `openWithSlidev.slidevPath`에 기록한다. 저장소에는 아무것도 설치하지 않는다.
 - 한 번에 하나만 띄운다: 다른 md를 열면 이전 서버를 끄고 새 파일로 띄운다. 포트가 막혀 있으면 1씩 올려 최대 3회 재시도. 서버는 `Slidev: 파일명` 터미널에서 돈다. 발표자 모드(`/presenter`)를 함께 열 수 있다.
 - 내장 테마 32종(공식 5 · 갤러리 23 · 추천 4)을 이름만으로 쓴다(`theme: terminal`). 없으면 처음 쓸 때 npm에서 받아 캐시에 둔다. 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로를 적으면 그 폴더 테마를 그대로 쓴다.
