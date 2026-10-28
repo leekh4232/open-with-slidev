@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check extension.js)",
+      "Bash(npx vsce *)",
+      "Bash(unzip -l open-with-slidev-local.vsix)",
+      "Bash(git check-ignore *)",
+      "Read(//Users/leekh/.vscode/extensions/leekh.open-with-slidev-0.8.4/**)",
+      "Bash(code --install-extension open-with-slidev-local.vsix --force)",
+      "Read(//Users/leekh/**)",
+      "Bash(npm ls *)",
+      "Read(//Users/leekh/slidev-themes/docs/**)"
+    ]
+  }
+}
