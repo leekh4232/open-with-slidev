@@ -233,6 +233,10 @@ function activate(context) {
   updateContext()
   context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateContext))
 
+  // Teacher Mode: 켜져 있으면 Build 하위 메뉴에 hossam/jussam build 를 보이는 컨텍스트 키 (package.json 의 when).
+  const updateTeacherMode = () => vscode.commands.executeCommand('setContext', 'openWithSlidev.teacherMode', cfg().get('teacherMode', false))
+  updateTeacherMode()
+
   // 확장 자동 업데이트(VS Code 설정 extensions.autoUpdate, 기본 켜짐)가 꺼져 있으면 처음 한 번만 켜기를 권한다.
   // 확장이 매니페스트로 정할 수 있는 값이 아니라 사용자가 버튼을 눌렀을 때만 설정을 바꾼다. 'onlyEnabledExtensions' 는 이 확장이 켜져 있으면 갱신되므로 그대로 둔다.
   const askedKey = 'autoUpdateAsked'
@@ -245,6 +249,7 @@ function activate(context) {
   }
 
   const cacheDir = path.join(context.globalStorageUri.fsPath, 'themes')    // 내장 테마 캐시
+  const toolsDir = path.join(context.globalStorageUri.fsPath, 'tools')     // 확장 전용 도구 캐시 (qpdf-wasm 등)
   const launcher = path.join(context.extensionPath, 'launch.js')            // 터미널 실행기 (배너 출력 + Slidev 실행)
   const out = vscode.window.createOutputChannel('Open with Slidev')   // npm 설치 출력
   context.subscriptions.push(out)
@@ -319,7 +324,7 @@ function activate(context) {
       vscode.window.showErrorMessage(`테마 설치 실패. 출력 창을 확인하세요. 터미널에서 직접: cd "${cacheDir}" && npm install --save ${todo.map(t => t.pkg).join(' ')}`)
     }
   }))
-  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('openWithSlidev')) updateContext() }))
+  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('openWithSlidev')) { updateContext(); updateTeacherMode() } }))
 
   /** 명령 팔레트에서 md 편집기 없이 실행했을 때: 워크스페이스의 md 파일(filePatterns 에 맞는 것) 중에서 고른다. 없거나 취소하면 null. */
   const pickMarkdown = async () => {
@@ -340,7 +345,8 @@ function activate(context) {
     return pick ? pick.uri : null
   }
 
-  const open = async (uri) => {
+  /** 실행 대상 md 파일과 프로젝트 루트를 정한다 (Open · Build 공통). 대상이 아니거나 취소하면 null. */
+  const prepare = async (uri) => {
     const c = cfg()
     const isMd = u => u && u.scheme === 'file' && /\.md$/i.test(u.fsPath)
     let target = uri instanceof vscode.Uri ? uri : vscode.window.activeTextEditor?.document.uri
@@ -370,8 +376,14 @@ function activate(context) {
       notified.add(root)
       vscode.window.showInformationMessage(`Open with Slidev: ${path.basename(root)} 에 Slidev 가 없어 그 폴더에 설치합니다 (처음 한 번, 수 분 걸릴 수 있음). 진행 상황은 알림과 출력 창에 보입니다.`)
     }
+    return { file, root, customCommand }
+  }
 
-    const previewIn = c.get('previewIn', 'browser')
+  const open = async (uri) => {
+    const t = await prepare(uri)
+    if (!t) return
+    const { file, root, customCommand } = t
+    const previewIn = cfg().get('previewIn', 'browser')
     // 같은 파일을 아직 시작하는 중이면(Slidev 내려받기, 서버 대기) 새로 띄우지 않고 터미널만 보여 준다 — 다시 클릭할 때마다 처음부터 시작하거나 둘이 겹치지 않게.
     if (starting.has(file)) {
       sessions.get(file)?.terminal.show(previewIn === 'vscode')
@@ -380,6 +392,30 @@ function activate(context) {
     }
     starting.add(file)
     try { await launch(file, root, previewIn, customCommand) } finally { starting.delete(file) }
+  }
+
+  /** 테마: ① 프런트매터에 이름이 있고 프로젝트에 그 패키지가 없는데 내장 목록에 있으면 캐시에서 ② 프런트매터에 없으면 defaultThemePath > defaultTheme(내장).
+   *  { fm: 프런트매터 theme, themeArg: --theme 로 넘길 값, themeMissing: 프로젝트에도 내장 목록에도 없는 프런트매터 테마 이름 } */
+  const themeFor = async (file, root) => {
+    const c = cfg()
+    let text = ''
+    try { text = fs.readFileSync(file, 'utf8') } catch { /* 읽기 실패: 테마 처리 생략 */ }
+    const fm = frontmatterTheme(text)
+    let themeArg = ''
+    let themeMissing = ''   // Slidev 가 npm 설치를 묻고, 패키지가 없으면 실패한다
+    if (fm) {
+      if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
+        const entry = catalogEntry(fm)
+        if (entry) themeArg = (await ensureTheme(entry)) || ''
+        else themeMissing = fm
+      }
+    } else {
+      const custom = (c.get('defaultThemePath') || '').trim()
+      const sel = c.get('defaultTheme', '')
+      if (custom) themeArg = resolveTheme(custom, root)
+      else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
+    }
+    return { fm, themeArg, themeMissing }
   }
 
   /** 파일 하나를 Slidev 로 띄운다 (open 에서 검사가 끝난 뒤). */
@@ -412,24 +448,7 @@ function activate(context) {
     const command = template.replace(/\$\{file\}/g, rel).replace(/\$\{root\}/g, root)
     const flags = [`--port ${port}`]
     if (previewIn === 'browser') flags.push('--open')
-    // 테마: ① 프런트매터에 이름이 있고 프로젝트에 그 패키지가 없는데 내장 목록에 있으면 캐시에서 ② 프런트매터에 없으면 defaultThemePath > defaultTheme(내장)
-    let text = ''
-    try { text = fs.readFileSync(file, 'utf8') } catch { /* 읽기 실패: 테마 처리 생략 */ }
-    const fm = frontmatterTheme(text)
-    let themeArg = ''
-    let themeMissing = ''   // 프런트매터 테마가 프로젝트에도 내장 목록에도 없을 때 그 이름: Slidev 가 npm 설치를 묻고, 패키지가 없으면 실패한다
-    if (fm) {
-      if (!isPathLike(fm) && !themeCandidates(fm).some(cand => findLocalPackage(path.dirname(file), cand) || findLocalPackage(root, cand))) {
-        const entry = catalogEntry(fm)
-        if (entry) themeArg = (await ensureTheme(entry)) || ''
-        else themeMissing = fm
-      }
-    } else {
-      const custom = (c.get('defaultThemePath') || '').trim()
-      const sel = c.get('defaultTheme', '')
-      if (custom) themeArg = resolveTheme(custom, root)
-      else if (sel && BY_ID.has(sel)) themeArg = (await ensureTheme(BY_ID.get(sel))) || ''
-    }
+    const { fm, themeArg, themeMissing } = await themeFor(file, root)
     if (themeArg) flags.push(`--theme "${themeArg}"`)
     // 터미널 배너에 보여 줄 테마 설명
     const themeLabel = fm
@@ -484,7 +503,201 @@ function activate(context) {
     if (c.get('openPresenter', false)) vscode.env.openExternal(vscode.Uri.parse(url + 'presenter/'))
   }
 
+  /** 자식 프로세스로 command 를 돌린다. 출력은 출력 창에, 경과 시간은 알림에 보여 주고 취소할 수 있다 (터미널과 달리 끝난 것을 안다).
+   *  onLine(줄) 로 출력 줄을 받는다. 돌려주는 값: true(성공) · false(실패) · 'cancelled' */
+  const runWithProgress = (label, command, cwd, onLine) => vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Build with Slidev', cancellable: true }, (progress, ctoken) => new Promise(resolve => {
+    const t0 = Date.now()
+    const tick = () => progress.report({ message: `${label} · ${Math.round((Date.now() - t0) / 1000)}초` })
+    tick(); const timer = setInterval(tick, 1000)
+    // shell: 윈도우에서도 PATH 의 node·npx 를 찾기 위해. detached(POSIX): 취소할 때 프로세스 그룹째 끝내기 위해
+    const child = spawn(command, { cwd, shell: true, detached: process.platform !== 'win32', windowsHide: true, env: { ...process.env, NO_COLOR: '1' } })
+    const take = chunk => { for (const l of chunk.toString().replace(/\x1b\[[0-9;]*m/g, '').split(/[\r\n]+/)) if (l.trim()) { out.appendLine(l); onLine?.(l) } }
+    child.stdout.on('data', take); child.stderr.on('data', take)
+    const sub = ctoken.onCancellationRequested(() => killTree(child))
+    const done = r => { clearInterval(timer); sub.dispose(); if (r === false) out.show(true); resolve(r) }   // 실패했을 때만 출력 창을 띄운다 (정상 빌드는 우측 하단 알림만)
+    child.on('error', e => { out.appendLine(e.message); done(false) })
+    child.on('close', code => done(ctoken.isCancellationRequested ? 'cancelled' : code === 0))
+  }))
+
+  /** md 옆에 같은 이름의 .html 한 파일로 빌드한다 (build.js: JS·CSS·이미지를 모두 넣고 해시 라우팅이라 더블클릭으로 열린다). */
+  const builder = path.join(context.extensionPath, 'build.js')
+  const encrypter = path.join(context.extensionPath, 'encrypt.js')   // PDF 비밀번호 설정기 (Teacher Mode)
+  const building = new Set()   // 빌드·내보내기 중인 "파일 경로|형식"
+  const buildHtml = async (uri) => {
+    const t = await prepare(uri)
+    if (!t) return
+    const { file, root } = t
+    const key = `${file}|html`
+    if (building.has(key)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 빌드하는 중입니다.`); return }
+    const outFile = file.replace(/\.md$/i, '.html')
+    // 같은 이름의 html 이 Slidev 로 만든 것이 아니면 덮어쓰기 전에 묻는다
+    if (fs.existsSync(outFile) && !fs.readFileSync(outFile, 'utf8').slice(0, 4000).includes('property="slidev:version"')) {
+      const pick = await vscode.window.showWarningMessage(`${path.basename(outFile)} 가 이미 있습니다. Slidev 로 만든 파일이 아닌데 덮어쓸까요?`, { modal: true }, '덮어쓰기')
+      if (pick !== '덮어쓰기') return
+    }
+    building.add(key)
+    try {
+      if (!(await ensureSlidevLocal(root))) return
+      const { themeArg } = await themeFor(file, root)
+      const token = Buffer.from(JSON.stringify({ entry: file, root, out: outFile, theme: themeArg }), 'utf8').toString('base64url')
+      out.appendLine(`[Build with Slidev] ${file} → ${outFile}`)
+      const skipped = []
+      const result = await runWithProgress(`${path.basename(file)} 빌드 중`, `node "${builder}" ${token}`, root, l => { if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) })
+      if (result === 'cancelled') return
+      if (!result) { vscode.window.showErrorMessage('Build with Slidev: 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.'); return }
+      const note = skipped.length ? ` public 폴더 파일 ${skipped.length}개는 넣지 못했습니다(출력 창의 SKIPPED).` : ''
+      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(outFile)} 를 만들었습니다. 이 파일 하나만 있으면 더블클릭으로 열립니다.${note}`, '브라우저로 열기', '폴더에서 보기')
+      if (pick === '브라우저로 열기') vscode.env.openExternal(vscode.Uri.file(outFile))
+      else if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outFile))
+    } finally { building.delete(key) }
+  }
+
+  /** slidev export 는 Playwright(playwright-chromium)로 슬라이드를 찍는다. 프로젝트에 없으면 처음 한 번 devDependencies 로 설치한다 (Chromium 도 함께 받는다). */
+  const ensurePlaywright = async (root) => {
+    if (findLocalPackage(root, 'playwright-chromium')) return true
+    const manual = `cd "${root}" && npm install --save-dev playwright-chromium`
+    try {
+      await withInstallProgress(`Playwright (${path.basename(root)} 에 설치, 내보내기용 Chromium 포함)`, manual, opts => runNpm(root, 'install --save-dev --no-audit --no-fund --loglevel=http playwright-chromium', opts))
+    } catch (e) {
+      if (e.message !== 'cancelled') {
+        out.appendLine(`[Build with Slidev] 설치 실패: ${e.message}`)
+        vscode.window.showErrorMessage(`Build with Slidev: Playwright 설치 실패. 출력 창을 확인하세요. 터미널에서 직접: ${manual}`)
+      }
+      return false
+    }
+    return Boolean(findLocalPackage(root, 'playwright-chromium'))
+  }
+  /** PDF 비밀번호(Teacher Mode)용 qpdf-wasm 을 도구 캐시에 준비하고 그 패키지 폴더를 돌려준다. 실패·취소하면 null (안내 표시).
+   *  Slidev export 는 PDF 암호를 못 걸어서, 내보낸 PDF 를 qpdf 로 AES-256 암호화한다. 테마처럼 캐시에 한 번만 받아 모든 프로젝트에서 쓴다. */
+  const QPDF_PKG = '@neslinesli93/qpdf-wasm'
+  const qpdfPkgDir = () => { const p = path.join(toolsDir, 'node_modules', QPDF_PKG); return fs.existsSync(path.join(p, 'dist', 'qpdf.js')) ? p : null }
+  const ensureQpdf = async () => {
+    const have = qpdfPkgDir()
+    if (have) return have
+    const manual = `cd "${toolsDir}" && npm install "${QPDF_PKG}"`
+    try {
+      await withInstallProgress('PDF 비밀번호 도구 (qpdf)', manual, opts => {
+        fs.mkdirSync(toolsDir, { recursive: true })
+        const pkg = path.join(toolsDir, 'package.json')
+        if (!fs.existsSync(pkg)) fs.writeFileSync(pkg, JSON.stringify({ name: 'open-with-slidev-tools', private: true, description: 'Open with Slidev 익스텐션이 내려받은 도구 캐시' }, null, 2))
+        if (!fs.existsSync(path.join(toolsDir, '.npmrc'))) fs.writeFileSync(path.join(toolsDir, '.npmrc'), 'audit=false\nfund=false\nprogress=false\nfetch-retries=5\nfetch-timeout=600000\n')
+        return runNpm(toolsDir, `install --loglevel=http "${QPDF_PKG}"`, opts)
+      })
+    } catch (e) {
+      if (e.message === 'cancelled') return null
+      out.appendLine(`[Build with Slidev] 설치 실패: ${e.message}`)
+      vscode.window.showErrorMessage(`Build with Slidev: PDF 비밀번호 도구(qpdf) 설치 실패. 출력 창을 확인하세요. 터미널에서 직접: ${manual}`)
+      return null
+    }
+    return qpdfPkgDir()
+  }
+  /** 내보내기 형식. out(md 경로) → 결과 경로. png 는 폴더(Slidev 가 비우고 다시 만든다), md 는 PNG 를 md 와 같은 폴더에 쓰므로 원본을 덮지 않게 하위 폴더로 보낸다. */
+  const EXPORTS = {
+    pdf: { name: 'PDF', out: f => f.replace(/\.md$/i, '.pdf') },
+    pptx: { name: 'PPTX', out: f => f.replace(/\.md$/i, '.pptx') },
+    png: { name: 'PNG', out: f => f.replace(/\.md$/i, '-png'), dir: true },
+    md: { name: 'Markdown', out: f => path.join(f.replace(/\.md$/i, '-md'), path.basename(f)) },
+  }
+  /** slidev export 로 md 옆에 내보낸다. */
+  const exportAs = async (uri, format) => {
+    const fmt = EXPORTS[format]
+    const t = await prepare(uri)
+    if (!t) return
+    const { file, root } = t
+    const key = `${file}|${format}`
+    if (building.has(key)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 ${fmt.name} 로 내보내는 중입니다.`); return }
+    const outPath = fmt.out(file)
+    // png 폴더는 Slidev 가 통째로 지우고 다시 만든다. PNG 말고 다른 것이 들어 있으면 먼저 묻는다
+    if (fmt.dir && fs.existsSync(outPath) && fs.readdirSync(outPath).some(n => !/\.png$/i.test(n))) {
+      const pick = await vscode.window.showWarningMessage(`${path.basename(outPath)} 폴더를 비우고 다시 만듭니다. PNG 가 아닌 파일도 들어 있는데 계속할까요?`, { modal: true }, '계속')
+      if (pick !== '계속') return
+    }
+    building.add(key)
+    try {
+      if (!(await ensureSlidevLocal(root))) return
+      if (!(await ensurePlaywright(root))) return
+      const { themeArg } = await themeFor(file, root)
+      if (format === 'md') fs.mkdirSync(path.dirname(outPath), { recursive: true })
+      const command = `npx slidev export "${path.relative(root, file)}" --format ${format} --output "${outPath}"${themeArg ? ` --theme "${themeArg}"` : ''}`
+      out.appendLine(`[Build with Slidev] ${file} → ${outPath}`)
+      out.appendLine(`$ ${command}`)
+      const result = await runWithProgress(`${path.basename(file)} → ${fmt.name} 내보내는 중`, command, root)
+      if (result === 'cancelled') return
+      if (!result) { vscode.window.showErrorMessage(`Build with Slidev: ${fmt.name} 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return }
+      const shown = fmt.dir ? `${path.basename(outPath)} 폴더` : format === 'md' ? `${path.basename(path.dirname(outPath))} 폴더(md 와 슬라이드 PNG)` : path.basename(outPath)
+      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${shown} 를 만들었습니다.`, '열기', '폴더에서 보기')
+      if (pick === '열기') {
+        if (format === 'md') vscode.window.showTextDocument(vscode.Uri.file(outPath))
+        else vscode.env.openExternal(vscode.Uri.file(outPath))
+      } else if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outPath))
+    } finally { building.delete(key) }
+  }
+
+  // Teacher Mode: 강사명 치환 빌드. hossam=이광호, jussam=주영아. from 의 문자열을 name 으로 바꾼 복사본으로 HTML 과 PDF 를 만들고 PDF 에 password 를 건다.
+  // 원본 md 는 건드리지 않는다. 비밀번호는 소스에 박혀 있어(공개 저장소) 아무나 바로 못 여는 수준의 보호다.
+  const TEACHER = {
+    hossam: { name: '이광호', from: ['주영아', '{teacher}'], password: 'it123!@#' },
+    jussam: { name: '주영아', from: ['이광호', '{teacher}'], password: 'ju123!@#' },
+  }
+  /** 강사명 치환 복사본으로 HTML + 비밀번호 PDF 를 만든다 (<이름>.<variant>.html, <이름>.<variant>.pdf). */
+  const teacherBuild = async (uri, variant) => {
+    const spec = TEACHER[variant]
+    const t = await prepare(uri)
+    if (!t) return
+    const { file, root } = t
+    const key = `${file}|teacher-${variant}`
+    if (building.has(key)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 ${variant} 로 빌드하는 중입니다.`); return }
+    const dir = path.dirname(file)
+    const base = path.basename(file).replace(/\.md$/i, '')
+    const tmpMd = path.join(dir, `.${base}.${variant}.owslidev.md`)   // 같은 폴더(상대 경로·테마 유지), 숨김. 끝나면 지운다
+    const htmlOut = path.join(dir, `${base}.${variant}.html`)
+    const pdfOut = path.join(dir, `${base}.${variant}.pdf`)
+    const relTmp = path.relative(root, tmpMd)
+    building.add(key)
+    try {
+      if (!(await ensureSlidevLocal(root))) return
+      // 강사명 치환 복사본 만들기 (split/join: 정규식 특수문자 걱정 없이 리터럴 치환)
+      let text
+      try { text = fs.readFileSync(file, 'utf8') } catch (e) { vscode.window.showErrorMessage(`Build with Slidev: ${path.basename(file)} 를 읽지 못했습니다: ${e.message}`); return }
+      let replaced = text
+      for (const f of spec.from) replaced = replaced.split(f).join(spec.name)
+      fs.writeFileSync(tmpMd, replaced)
+      const { themeArg } = await themeFor(file, root)
+      out.appendLine(`[Build with Slidev] ${variant} (강사명 ${spec.name}): ${file} → ${htmlOut}, ${pdfOut}`)
+      // 1) HTML 한 파일
+      const htmlToken = Buffer.from(JSON.stringify({ entry: tmpMd, root, out: htmlOut, theme: themeArg }), 'utf8').toString('base64url')
+      const htmlRes = await runWithProgress(`${base} → ${variant} HTML 빌드 중`, `node "${builder}" ${htmlToken}`, root)
+      if (htmlRes === 'cancelled') return
+      if (!htmlRes) { vscode.window.showErrorMessage(`Build with Slidev: ${variant} HTML 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return }
+      // 2) PDF (slidev export) — Playwright 필요
+      if (!(await ensurePlaywright(root))) return
+      const pdfCmd = `npx slidev export "${relTmp}" --format pdf --output "${pdfOut}"${themeArg ? ` --theme "${themeArg}"` : ''}`
+      out.appendLine(`$ ${pdfCmd}`)
+      const pdfRes = await runWithProgress(`${base} → ${variant} PDF 내보내는 중`, pdfCmd, root)
+      if (pdfRes === 'cancelled') { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return }
+      if (!pdfRes) { vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return }
+      // 3) PDF 비밀번호 (qpdf-wasm, 별도 프로세스)
+      const pkgDir = await ensureQpdf()
+      if (!pkgDir) { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return }
+      const encToken = Buffer.from(JSON.stringify({ pkgDir, input: pdfOut, output: pdfOut, password: spec.password }), 'utf8').toString('base64url')
+      const encRes = await runWithProgress(`${variant} PDF 비밀번호 설정 중`, `node "${encrypter}" ${encToken}`, root)
+      if (encRes === 'cancelled' || !encRes) {
+        try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ }   // 암호 안 걸린 PDF 를 남기지 않는다
+        if (!encRes) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.`)
+        return
+      }
+      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${variant} — ${path.basename(htmlOut)} 와 ${path.basename(pdfOut)}(비밀번호 설정)를 만들었습니다.`, '폴더에서 보기')
+      if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(pdfOut))
+    } finally {
+      try { fs.rmSync(tmpMd, { force: true }) } catch { /* 없으면 그만 */ }
+      building.delete(key)
+    }
+  }
+
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.open', open))
+  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', buildHtml))
+  for (const format of Object.keys(EXPORTS)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.export.${format}`, uri => exportAs(uri, format)))
+  for (const variant of Object.keys(TEACHER)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.teacher.${variant}`, uri => teacherBuild(uri, variant)))
   context.subscriptions.push(vscode.window.onDidCloseTerminal(t => {
     for (const [k, v] of sessions) if (v.terminal === t) sessions.delete(k)
   }))

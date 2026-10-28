@@ -4,6 +4,36 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.8.1] - 2026-10-28
+
+### 변경
+- **빌드·내보내기(HTML·PDF·PPTX·PNG·Markdown·Teacher Mode)를 할 때 출력 창 Open with Slidev가 자동으로 열리지 않습니다.** 상태는 전부터 있던 우측 하단 진행 알림(경과 시간·취소)으로 보여 줍니다. 빌드 로그는 출력 창에 그대로 쌓이고, **빌드가 실패했을 때만** 출력 창이 자동으로 열려 원인을 보여 줍니다. (처음 한 번 Slidev·Playwright·qpdf를 내려받는 설치 과정은 그대로 출력 창에 진행 상황이 보입니다.)
+
+## [0.8.0] - 2026-10-28
+
+### 추가
+- **Teacher Mode (설정 `openWithSlidev.teacherMode`, 기본 꺼짐).** 켜면 **Build with Slidev** 하위 메뉴 끝에 구분선과 함께 **hossam build**·**jussam build**가 생깁니다(편집기 본문·편집기 탭·탐색기 메뉴 모두). 두 메뉴는 원본 md를 그대로 두고, 강사명 자리(`{teacher}` 또는 상대 강사 이름)를 해당 강사 이름으로 바꾼 복사본으로 빌드해 HTML 한 파일과 **비밀번호가 걸린 PDF**를 만듭니다. 결과는 `slides.hossam.html`·`slides.hossam.pdf`(jussam은 `slides.jussam.*`)처럼 선생님별로 따로 나와 서로 덮지 않습니다. hossam은 **이광호**, jussam은 **주영아**로 치환합니다.
+- PDF 비밀번호는 Slidev가 직접 걸지 못해, 내보낸 PDF를 qpdf로 AES-256 암호화합니다. 처음 한 번 `@neslinesli93/qpdf-wasm`를 익스텐션 전역 저장소(`globalStorage/leekh.open-with-slidev/tools`)에 내려받습니다(시스템에 qpdf를 따로 깔 필요 없음). 비밀번호를 거는 데 실패하면 암호화되지 않은 PDF를 남기지 않습니다.
+
+## [0.7.0] - 2026-10-27
+
+### 추가
+- **Build with Slidev가 하위 메뉴가 되어 여러 형식으로 내보냅니다.** HTML(기존과 같은 한 파일) · PDF(`slides.pdf`) · PowerPoint(`slides.pptx`) · PNG(`slides-png/` 폴더) · Markdown(`slides-md/slides.md`와 슬라이드 PNG) 중에서 고릅니다. 편집기 본문 · 편집기 탭 · 탐색기 메뉴에 있고, 명령 팔레트에서는 `Build with Slidev: PDF (.pdf)`처럼 형식마다 명령이 있습니다.
+- PDF · PPTX · PNG · Markdown은 Slidev의 `slidev export`로 만듭니다. 프로젝트에 `playwright-chromium`이 없으면 처음 한 번 루트에 `devDependencies`로 설치하고 Chromium도 받습니다. 진행 상황은 알림과 출력 창 **Open with Slidev**에 보이고 취소할 수 있습니다.
+
+### 변경
+- HTML 빌드 명령의 팔레트 이름이 `Slidev: Build with Slidev`에서 `Build with Slidev: HTML (.html, 서버 없이 열리는 한 파일)`로 바뀌었습니다.
+
+## [0.6.1] - 2026-10-27
+
+### 수정
+- **Build with Slidev**로 만든 HTML을 열 때 브라우저 콘솔에 뜨던 `Failed to patch FloatingVue` 경고가 나오지 않습니다. Slidev 53이 쓰는 코드 타입 힌트 플러그인이 floating-vue 5.4와 맞지 않아 모든 페이지에서 내던 경고로, 슬라이드 동작에는 영향이 없었습니다.
+
+## [0.6.0] - 2026-10-27
+
+### 추가
+- **우클릭 메뉴 Build with Slidev**: md 파일 옆에 같은 이름의 HTML 파일 하나(`slides.md` → `slides.html`)를 만듭니다. JS · CSS · 테마 · md 기준 상대 경로 이미지가 모두 들어가 서버 없이 더블클릭으로 열리고, 클릭 애니메이션과 발표자 모드(`#/presenter/1`)도 됩니다. 편집기 본문 · 편집기 탭 · 탐색기 메뉴와 명령 팔레트(`Slidev: Build with Slidev`)에 있습니다. 빌드 중에는 알림에 경과 시간이, 출력 창 **Open with Slidev**에 빌드 출력이 보이고 취소할 수 있습니다. `public/` 폴더의 파일은 들어가지 않아 끝난 뒤 알려 줍니다. 같은 이름의 HTML이 Slidev로 만든 파일이 아니면 덮어쓰기 전에 묻습니다.
+
 ## [0.5.3] - 2026-10-26
 
 ### 변경
