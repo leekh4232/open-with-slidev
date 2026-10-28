@@ -4,7 +4,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
-## [0.9.0] - 2026-10-28
+## [0.8.2] - 2026-10-28
 
 ### 변경
 - **Slidev를 저장소마다 설치하지 않고 전역 Slidev를 씁니다.** 프로젝트에 `node_modules/@slidev/cli`가 있으면 지금처럼 그것을 쓰고, 없으면 전역(`npm install -g`)에 설치된 Slidev로 실행·빌드합니다. 전역에도 없으면 처음 한 번 VS Code 터미널에서 `npm install -g @slidev/cli @slidev/theme-default`를 실행합니다(환경에 따라 sudo 비밀번호를 물을 수 있어 터미널에서 돌립니다). 저장소에 `package.json`·`node_modules`를 만들거나 `.gitignore`를 고치지 않습니다.
