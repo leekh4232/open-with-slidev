@@ -4,7 +4,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
-## [미배포]
+## [0.8.5] - 2026-10-29
 
 ### 변경
 - **서버가 이미 떠 있는 md 파일에서 다시 Open with Slidev를 실행하면 브라우저에 슬라이드를 새로 띄웁니다.** `openWithSlidev.previewIn`이 `browser`(기본)일 때 해당합니다. 전에는 터미널만 보여 줘서 브라우저 탭을 닫은 뒤에는 아무 일도 일어나지 않는 것처럼 보였습니다. `vscode`일 때는 지금처럼 Simple Browser를 다시 엽니다. `openWithSlidev.onRerun`이 `focus`(기본)일 때의 동작이며, `restart`는 그대로입니다.
