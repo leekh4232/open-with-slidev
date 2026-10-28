@@ -1,7 +1,7 @@
 {
   "name": "open-with-slidev",
   "displayName": "Open with Slidev",
-  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. 프로젝트에 Slidev 가 없으면 처음 한 번 그 폴더에 설치해 주고, 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다. 'Build with Slidev' 하위 메뉴로 서버 없이 열리는 HTML 한 파일, PDF, PPTX, PNG, Markdown 으로 내보낸다.",
+  "description": "마크다운 파일을 우클릭 → 'Open with Slidev' 로 바로 Slidev 슬라이드를 띄운다. Slidev 가 없으면 처음 한 번 전역으로 설치해 주고(저장소마다 node_modules 를 만들지 않음), 내장 테마 32종을 이름만으로, 테마 폴더는 경로로 쓸 수 있다. 'Build with Slidev' 하위 메뉴로 서버 없이 열리는 HTML 한 파일, PDF, PPTX, PNG, Markdown 으로 내보낸다.",
   "version": "0.8.1",
   "publisher": "leekh",
   "license": "MIT",
@@ -159,8 +159,14 @@
         },
         "openWithSlidev.command": {
           "type": "string",
-          "default": "npx slidev \"${file}\"",
-          "description": "실행 명령. ${file} = 프로젝트 루트 기준 md 상대 경로, ${root} = 프로젝트 루트. 포트·--open·테마·extraArgs 는 뒤에 자동으로 붙는다. 비우거나 기본값이면 Slidev 가 설치된 폴더에서는 npx slidev, 없으면 처음 한 번 그 루트에 @slidev/cli 와 기본 테마를 devDependencies 로 설치한 뒤 실행. 예: pnpm exec slidev \"${file}\""
+          "default": "node \"${slidev}\" \"${file}\"",
+          "description": "실행 명령. ${slidev} = 쓸 Slidev 실행 파일(프로젝트의 node_modules/@slidev/cli 가 있으면 그것, 없으면 전역 설치의 bin/slidev.mjs), ${file} = 프로젝트 루트 기준 md 상대 경로, ${root} = 프로젝트 루트. 포트·--open·테마·extraArgs 는 뒤에 자동으로 붙는다. 비우면 기본값. 직접 바꾸면 그 명령을 그대로 쓴다. 예: pnpm exec slidev \"${file}\""
+        },
+        "openWithSlidev.slidevPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "전역 Slidev 의 @slidev/cli 패키지 폴더 (예: /opt/homebrew/lib/node_modules/@slidev/cli). 비우면 처음 실행 때 자동으로 찾아(npm root -g, PATH 의 slidev) 여기에 기록하고, 없으면 터미널에서 npm install -g @slidev/cli @slidev/theme-default 로 설치한 뒤 기록한다. 프로젝트에 로컬 Slidev(node_modules/@slidev/cli)가 있으면 그것을 먼저 쓴다"
         },
         "openWithSlidev.extraArgs": {
           "type": "string",
@@ -190,7 +196,7 @@
         "openWithSlidev.projectRoot": {
           "type": "string",
           "default": "",
-          "description": "Slidev 가 설치된 폴더(node_modules/.bin/slidev 가 있는 곳). 비우면 md 파일 위쪽으로 자동 탐색하고, 없으면 처음 한 번 그 루트에 Slidev 를 설치한다. 절대 경로 또는 워크스페이스 기준 상대 경로"
+          "description": "프로젝트 루트. md 상대 경로와 테마 경로의 기준이고, 여기(또는 위쪽)의 node_modules/@slidev/cli 가 있으면 그것으로 실행한다. 비우면 md 파일 위쪽에서 Slidev 가 설치된 폴더를 찾고, 없으면 워크스페이스 폴더(없으면 md 폴더). 절대 경로 또는 워크스페이스 기준 상대 경로"
         },
         "openWithSlidev.defaultTheme": {
           "type": "string",

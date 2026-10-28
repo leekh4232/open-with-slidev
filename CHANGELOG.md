@@ -4,6 +4,14 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [미배포]
+
+### 변경
+- **Slidev를 저장소마다 설치하지 않고 전역 Slidev를 씁니다.** 프로젝트에 `node_modules/@slidev/cli`가 있으면 지금처럼 그것을 쓰고, 없으면 전역(`npm install -g`)에 설치된 Slidev로 실행·빌드합니다. 전역에도 없으면 처음 한 번 VS Code 터미널에서 `npm install -g @slidev/cli @slidev/theme-default`를 실행합니다(환경에 따라 sudo 비밀번호를 물을 수 있어 터미널에서 돌립니다). 저장소에 `package.json`·`node_modules`를 만들거나 `.gitignore`를 고치지 않습니다.
+- 새 설정 **`openWithSlidev.slidevPath`**(기본 `""`, 사용자 설정·기기별): 전역 Slidev의 `@slidev/cli` 패키지 폴더. 처음 실행 때 자동으로 찾아(`npm root -g` → PATH의 `slidev`) 기록하고, 설치했을 때도 기록합니다. 미리 적어 둘 수 있습니다.
+- **`openWithSlidev.command` 기본값이 `npx slidev "${file}"`에서 `node "${slidev}" "${file}"`로 바뀌었습니다.** `${slidev}`는 쓸 Slidev 실행 파일(프로젝트 또는 전역의 `bin/slidev.mjs`)로 바뀌어 PATH에 기대지 않습니다. 설정에 옛 기본값이 그대로 적혀 있으면 기본값으로 봅니다. 직접 바꾼 명령(`pnpm exec slidev "${file}"` 등)은 지금처럼 그대로 씁니다.
+- **Build with Slidev**(HTML · PDF · PPTX · PNG · Markdown · Teacher Mode)도 같은 Slidev로 빌드합니다. 내보내기에 필요한 `playwright-chromium`은 프로젝트에 없으면 전역에서 찾고, 그것도 없으면 터미널에서 `npm install -g playwright-chromium`으로 전역에 설치합니다(전에는 프로젝트 `devDependencies`에 설치했습니다). 전역 하나로 모든 프로젝트에서 씁니다.
+
 ## [0.8.1] - 2026-10-28
 
 ### 변경

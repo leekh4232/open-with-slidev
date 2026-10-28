@@ -1,12 +1,11 @@
 // Build with Slidev — single-file HTML builder.
-// The extension runs `node build.js <base64url JSON>` with cwd = project root. It loads the project's own @slidev/cli,
-// builds the deck with hash routing, no code splitting and every asset inlined, then moves the JS and CSS into index.html
+// The extension runs `node build.js <base64url JSON>` with cwd = project root. It loads the @slidev/cli package the extension
+// resolved for this project (info.slidevPath: the project's node_modules/@slidev/cli, else the global install), builds the deck with hash routing, no code splitting and every asset inlined, then moves the JS and CSS into index.html
 // and copies that one file to info.out. The result opens by double-click (file://), no server needed.
 // Exits 0 on success, 1 on failure. Prints "SKIPPED <file>" lines for build outputs that could not be inlined (public/ files).
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
-const { createRequire } = require('module')
 const { pathToFileURL } = require('url')
 
 const info = JSON.parse(Buffer.from(process.argv[2] || '', 'base64url').toString('utf8'))
@@ -63,11 +62,11 @@ const singleFile = {
 }
 
 ;(async () => {
-  // The project's Slidev (installed by the extension or by the user). build() is not exported, so load its chunk file.
-  const req = createRequire(path.join(info.root, 'index.js'))
-  const dist = path.join(path.dirname(req.resolve('@slidev/cli/package.json')), 'dist')
+  // build() is not exported from @slidev/cli, so load its chunk file straight from the package's dist folder.
+  if (!info.slidevPath) throw new Error('slidevPath missing: the extension must pass the @slidev/cli package folder')
+  const dist = path.join(info.slidevPath, 'dist')
   const buildFile = fs.readdirSync(dist).find(f => /^build-.*\.mjs$/.test(f))
-  if (!buildFile) throw new Error(`build chunk not found in ${dist}. Update Slidev: npm install -D @slidev/cli@latest`)
+  if (!buildFile) throw new Error(`build chunk not found in ${dist}. Update Slidev: npm install -g @slidev/cli@latest`)
   const { resolveOptions } = await import(pathToFileURL(path.join(dist, 'index.mjs')).href)
   const { build } = await import(pathToFileURL(path.join(dist, buildFile)).href)
 

@@ -15,7 +15,7 @@
 ## 할 수 있는 것
 
 - **우클릭 한 번으로 실행**: 편집기 본문, 편집기 탭, 탐색기의 `.md` 파일 어디서든 메뉴가 보입니다.
-- **설치 없이 시작**: Slidev가 설치된 폴더가 md 파일 위쪽에 있으면 그곳에서 실행하고, 없으면 처음 한 번 프로젝트 폴더에 Slidev를 설치한 뒤 그 안에서 실행합니다.
+- **설치 없이 시작**: Slidev가 설치된 프로젝트가 md 파일 위쪽에 있으면 그 Slidev로, 없으면 전역(`npm -g`) Slidev로 실행합니다. 전역에도 없으면 처음 한 번 터미널에서 설치하고 그 경로를 설정에 기록합니다. 저장소마다 `node_modules`를 만들지 않습니다.
 - **포트 자동 선택**: 설정한 포트가 사용 중이면 1씩 올려 최대 3회 다시 시도합니다. 덱 여러 개를 동시에 띄울 수 있습니다.
 - **진행 상황 표시**: 터미널에 파일·루트·포트·테마·실행 명령을 색이 입혀진 영어 배너로 보여 주고, 서버가 뜰 때까지 경과 시간이 보이는 알림을 띄웁니다(취소 가능).
 - **미리보기 위치 선택**: 외부 브라우저 또는 VS Code 안 Simple Browser 탭(편집기 옆) 중 고를 수 있습니다.
@@ -23,7 +23,7 @@
 - **폴더 테마**: 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로를 적으면 그 폴더를 그대로 씁니다. 테마를 고치면 다시 열 때 바로 반영됩니다.
 - **발표자 모드**: 원하면 `/presenter` 화면도 함께 엽니다.
 - **HTML 파일 하나로 빌드**: md 옆에 같은 이름의 `.html` 하나를 만듭니다. 서버 없이 더블클릭으로 열리고, 메일이나 메신저로 그 파일만 보내면 됩니다.
-- **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. 처음 한 번 Playwright(Chromium)를 프로젝트에 설치합니다.
+- **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. 처음 한 번 Playwright(Chromium)를 전역으로 설치합니다.
 - **Teacher Mode(선택)**: 켜면 하위 메뉴에 `hossam build`·`jussam build`가 더 보입니다. 강사명 자리를 선생님 이름으로 바꾼 복사본으로 HTML과 비밀번호가 걸린 PDF를 만듭니다(원본 md는 그대로).
 - **파일마다 터미널 하나**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주거나(기본) 서버를 다시 띄웁니다.
 
@@ -31,11 +31,11 @@
 
 Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아도 됩니다.**
 
-- Slidev가 설치된 프로젝트(`node_modules/.bin/slidev`)가 md 파일 위쪽에 있으면 그곳에서 실행합니다.
-- 없으면 처음 한 번 프로젝트 루트(워크스페이스 폴더, 없으면 md 파일 폴더)에 `@slidev/cli`와 기본 테마를 `devDependencies`로 설치하고 그 안의 Slidev로 띄웁니다. `package.json`이 없으면 만들고, git 저장소인데 `.gitignore`에 `node_modules`가 없으면 한 줄 보탭니다. 받아 둔 저장소처럼 `package.json`에 `@slidev/cli`만 적혀 있고 `node_modules`가 없으면 `npm install`로 채웁니다.
-- 설치하는 동안 알림에 경과 시간과 받은 패키지 수가, 출력 창 **Open with Slidev**에 npm 출력이 보입니다. 시간 제한은 없고(윈도우는 수 분 걸릴 수 있습니다), 알림에서 취소할 수 있으며 실패하면 **다시 시도**로 이어서 받습니다. 다음부터는 바로 뜹니다.
+- Slidev가 설치된 프로젝트(`node_modules/@slidev/cli`)가 md 파일 위쪽에 있으면 그 Slidev로 실행합니다. 버전을 고정한 저장소를 그대로 존중합니다.
+- 없으면 전역 Slidev(`npm install -g`로 설치한 `@slidev/cli`)로 실행합니다. 설정 `openWithSlidev.slidevPath`에 적힌 경로 → `npm root -g` → PATH의 `slidev` 순으로 찾고, 찾은 `@slidev/cli` 패키지 폴더를 그 설정에 기록해 다음부터는 바로 씁니다. 미리 적어 둘 수도 있습니다.
+- 전역에도 없으면 처음 한 번 VS Code 터미널에서 `npm install -g @slidev/cli @slidev/theme-default`를 실행합니다(환경에 따라 sudo 비밀번호를 물을 수 있어 터미널에서 돌립니다). 끝나면 경로를 설정에 기록하고 바로 띄웁니다. 알림에서 취소할 수 있고, 실패하면 직접 설치할 명령을 안내합니다. 확장이 저장소에 `package.json`이나 패키지를 설치하지는 않습니다.
 - 프런트매터의 `theme: ./내테마`처럼 폴더로 가리키는 테마는 그대로 되고, npm 테마 패키지는 Slidev가 터미널에서 설치 여부를 묻습니다.
-- `openWithSlidev.command`를 바꾸면(예: `pnpm exec slidev "${file}"`) 위 탐색 없이 그 명령을 그대로 씁니다.
+- `openWithSlidev.command`를 바꾸면(예: `pnpm exec slidev "${file}"`) 그 명령을 그대로 씁니다.
 
 ## 사용법
 
@@ -66,12 +66,12 @@ Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아
 - 글꼴은 Slidev 기본 설정대로 Google Fonts에서 받으므로, 인터넷이 없으면 대체 글꼴로 보입니다.
 - 같은 이름의 HTML이 이미 있는데 Slidev로 만든 파일이 아니면 덮어쓰기 전에 묻습니다.
 - 빌드하는 동안 우측 하단 알림에 경과 시간이 보이고 거기서 취소할 수 있습니다. 출력 창 **Open with Slidev**은 자동으로 열리지 않고(빌드 출력은 거기에 쌓이며, 실패했을 때만 자동으로 열립니다) 끝나면 **브라우저로 열기** · **폴더에서 보기** 버튼이 나옵니다.
-- 프로젝트의 Slidev(`@slidev/cli`)로 빌드합니다. 테마는 **Open with Slidev**와 같은 규칙으로 정합니다.
+- **Open with Slidev**와 같은 Slidev(프로젝트의 `@slidev/cli`, 없으면 전역)로 빌드하고, 테마도 같은 규칙으로 정합니다.
 
 #### PDF · PPTX · PNG · Markdown
 
-- 프로젝트의 Slidev로 `slidev export --format <형식> --output <결과>`를 실행합니다. 테마는 **Open with Slidev**와 같은 규칙으로 정합니다. 프런트매터의 `exportFilename`보다 위 표의 이름이 우선합니다.
-- **처음 한 번 Playwright를 설치합니다.** Slidev는 브라우저로 슬라이드를 찍어 내보내므로, 프로젝트에 `playwright-chromium`이 없으면 루트에 `devDependencies`로 설치하고 Chromium도 함께 받습니다(수백 MB, 수 분 걸릴 수 있음). 진행 상황은 알림과 출력 창에 보이고 취소할 수 있습니다.
+- **Open with Slidev**와 같은 Slidev(프로젝트의 `@slidev/cli`, 없으면 전역)로 `slidev export --format <형식> --output <결과>`를 실행합니다. 테마도 같은 규칙으로 정합니다. 프런트매터의 `exportFilename`보다 위 표의 이름이 우선합니다.
+- **처음 한 번 Playwright를 설치합니다.** Slidev는 브라우저로 슬라이드를 찍어 내보내므로 `playwright-chromium`이 필요합니다. 프로젝트에 있으면 그것을, 없으면 전역(`npm -g`)에서 찾고, 그것도 없으면 터미널에서 `npm install -g playwright-chromium`을 실행합니다(Chromium도 함께 받아 수백 MB, 수 분 걸릴 수 있음). 전역 하나로 모든 프로젝트에서 씁니다. 알림에서 취소할 수 있습니다.
 - `slides-png/` 폴더는 내보낼 때마다 비우고 다시 만듭니다. PNG가 아닌 파일이 들어 있으면 먼저 묻습니다. PDF · PPTX는 같은 이름 파일을 덮어씁니다.
 - 내보내는 동안 우측 하단 알림에 경과 시간이 보이고 거기서 취소할 수 있습니다. 출력 창 **Open with Slidev**은 자동으로 열리지 않고(Slidev 출력은 거기에 쌓이며, 실패했을 때만 자동으로 열립니다) 끝나면 **열기** · **폴더에서 보기** 버튼이 나옵니다. HTML · PDF 등 서로 다른 형식은 동시에 내보낼 수 있습니다.
 
@@ -122,11 +122,12 @@ sidebar: true      # 생략하면 켬
 | 설정 | 기본값 | 설명 |
 |---|---|---|
 | `openWithSlidev.previewIn` | `browser` | `browser`: 외부 브라우저에서 엽니다. `vscode`: VS Code 안 Simple Browser 탭을 편집기 옆에 엽니다. |
-| `openWithSlidev.command` | `npx slidev "${file}"` | 실행 명령. `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 기본값이면 Slidev가 없는 루트에는 처음 한 번 설치한 뒤 실행합니다. 예: `pnpm exec slidev "${file}"` |
+| `openWithSlidev.command` | `node "${slidev}" "${file}"` | 실행 명령. `${slidev}`는 쓸 Slidev 실행 파일(프로젝트의 `node_modules/@slidev/cli`가 있으면 그것, 없으면 전역 설치의 `bin/slidev.mjs`), `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 직접 바꾸면 그 명령을 그대로 씁니다. 예: `pnpm exec slidev "${file}"` |
+| `openWithSlidev.slidevPath` | (자동) | 전역 Slidev의 `@slidev/cli` 패키지 폴더(예: `/opt/homebrew/lib/node_modules/@slidev/cli`). 비우면 처음 실행 때 자동으로 찾아 기록하고, 없으면 터미널에서 설치한 뒤 기록합니다. 미리 적어 둘 수 있습니다. 사용자 설정에 기기별로 저장됩니다. |
 | `openWithSlidev.extraArgs` | (없음) | 명령 끝에 덧붙일 인자. 예: `--remote`(다른 기기에서 접속), `--log info` |
 | `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고, `restart`는 서버를 끄고 다시 띄웁니다. |
 | `openWithSlidev.port` | `3030` | 시작 포트. 사용 중이면 1씩 올려 최대 3회 다시 시도합니다. |
-| `openWithSlidev.projectRoot` | (자동) | Slidev가 설치된 폴더. 비우면 md 파일 위쪽으로 자동 탐색합니다. 절대 경로 또는 워크스페이스 기준 상대 경로. |
+| `openWithSlidev.projectRoot` | (자동) | 프로젝트 루트. md 상대 경로와 테마 경로의 기준이고, 여기(또는 위쪽)에 `node_modules/@slidev/cli`가 있으면 그것으로 실행합니다. 비우면 md 파일 위쪽에서 Slidev가 설치된 폴더를 찾고, 없으면 워크스페이스 폴더입니다. 절대 경로 또는 워크스페이스 기준 상대 경로. |
 | `openWithSlidev.defaultTheme` | `""` (지정 안 함) | 프런트매터에 `theme`가 없을 때 쓸 내장 테마(드롭다운). 처음 쓸 때 npm에서 내려받습니다. "지정 안 함"이면 Slidev 기본 동작입니다. 프런트매터의 `theme`가 우선합니다. |
 | `openWithSlidev.defaultThemePath` | (없음) | 내장 목록에 없는 기본 테마: 폴더 경로(절대 또는 프로젝트 루트 기준) 또는 npm 테마 이름. 값이 있으면 드롭다운보다 우선합니다. |
 | `openWithSlidev.openPresenter` | `false` | 발표자 모드(`/presenter`)도 외부 브라우저로 함께 엽니다. |
@@ -149,13 +150,14 @@ sidebar: true      # 생략하면 켬
 ## 동작 순서
 
 1. 파일이 `filePatterns`에 맞는지 확인하고, 수정 중이면 저장합니다.
-2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다. 루트에 실행할 수 있는 Slidev가 없으면 먼저 그 폴더에 설치합니다. 같은 파일의 서버가 아직 시작 중이면 새로 띄우지 않고 그 터미널을 보여 줍니다.
-3. `port`부터 비어 있는 포트를 찾습니다(사용 중이면 +1, 최대 3회).
-4. 테마를 정합니다. 프런트매터의 테마 이름이 프로젝트에 없고 내장 목록에 있으면 캐시에서, 프런트매터에 테마가 없으면 `defaultThemePath` 또는 `defaultTheme`에서 가져와 `--theme`로 넘깁니다.
-5. 루트에서 `command`에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다. 터미널에는 확장에 든 실행기(`node launch.js …`) 한 줄만 보내고, 실행기가 배너를 찍은 뒤 그 명령을 같은 터미널에서 돌립니다.
-6. 서버가 HTTP 응답을 줄 때까지(최대 5분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
+2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다. 같은 파일의 서버가 아직 시작 중이면 새로 띄우지 않고 그 터미널을 보여 줍니다.
+3. 쓸 Slidev를 정합니다. 루트(또는 위쪽)의 `node_modules/@slidev/cli`가 있으면 그것, 없으면 전역 Slidev입니다. 전역은 `slidevPath` 설정 → `npm root -g` → PATH 순으로 찾아 설정에 기록하고, 없으면 터미널에서 `npm install -g`로 설치합니다.
+4. `port`부터 비어 있는 포트를 찾습니다(사용 중이면 +1, 최대 3회).
+5. 테마를 정합니다. 프런트매터의 테마 이름이 프로젝트에 없고 내장 목록에 있으면 캐시에서, 프런트매터에 테마가 없으면 `defaultThemePath` 또는 `defaultTheme`에서 가져와 `--theme`로 넘깁니다.
+6. 루트에서 `command`(`${slidev}`는 3번의 실행 파일, `${file}`은 상대 경로)에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다. 터미널에는 확장에 든 실행기(`node launch.js …`) 한 줄만 보내고, 실행기가 배너를 찍은 뒤 그 명령을 같은 터미널에서 돌립니다.
+7. 서버가 HTTP 응답을 줄 때까지(최대 5분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
 
-**Build with Slidev**는 1, 2, 4번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 프로젝트의 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다. PDF · PPTX · PNG · Markdown은 2번 뒤 `playwright-chromium`을 준비하고, 4번으로 정한 테마를 `--theme`로 넘겨 루트에서 `npx slidev export …`를 실행합니다.
+**Build with Slidev**는 1 ~ 3, 5번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 3번에서 정한 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다. PDF · PPTX · PNG · Markdown은 3번 뒤 `playwright-chromium`을 준비하고(프로젝트 → 전역 순으로 찾고, 없으면 터미널에서 전역 설치), 5번으로 정한 테마를 `--theme`로 넘겨 루트에서 `node <slidev.mjs> export …`를 실행합니다.
 
 ## 설치
 
