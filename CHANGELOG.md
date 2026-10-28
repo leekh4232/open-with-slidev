@@ -4,7 +4,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
-## [미배포]
+## [0.8.4] - 2026-10-28
 
 ### 추가
 - **md 파일 여러 개를 한 번에 빌드·내보내기합니다.** 탐색기에서 md를 여러 개 선택해 **Build with Slidev** 하위 메뉴(HTML · PDF · PPTX · PNG · Markdown · Teacher Mode)를 실행하면 선택한 파일을 차례로 처리합니다. 진행 알림에 `(2/5)`처럼 순서가 보이고, 끝나면 완료·실패 개수를 한 번에 알립니다. 하나를 취소하면 남은 파일은 하지 않습니다.
