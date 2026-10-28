@@ -4,7 +4,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
-## [미배포]
+## [0.8.3] - 2026-10-28
 
 ### 변경
 - **서버를 한 번에 하나만 띄웁니다.** 다른 md 파일에서 **Open with Slidev**를 실행하면 이전에 띄운 서버(터미널)를 끄고 새 파일로 다시 띄웁니다. 포트가 비기를 잠깐 기다려 같은 번호를 이어받습니다. 같은 파일을 다시 열 때는 지금처럼 `openWithSlidev.onRerun`(`focus` · `restart`)을 따릅니다. Slidev나 테마를 내려받는 동안 다른 파일을 열면 마지막에 연 파일만 뜹니다.
