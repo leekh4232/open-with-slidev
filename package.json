@@ -191,7 +191,7 @@
           "default": 3030,
           "minimum": 1024,
           "maximum": 65535,
-          "description": "시작 포트. 사용 중이면 다음 번호를 자동으로 찾는다 (덱마다 3030, 3031, …)"
+          "description": "시작 포트. 다른 프로그램이 쓰고 있으면 다음 번호를 자동으로 찾는다 (3031, 3032 …). 서버는 한 번에 하나만 띄우며, 다른 md 를 열면 이전 서버를 끄고 새로 띄운다"
         },
         "openWithSlidev.projectRoot": {
           "type": "string",

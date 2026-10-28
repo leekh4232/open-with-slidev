@@ -7,7 +7,7 @@
 //       내장 테마(themes.json): 프런트매터 theme 이름이나 defaultTheme 설정이 목록에 있으면 캐시 폴더에 npm 으로 내려받아 --theme 절대 경로로 넘긴다.
 //       프런트매터 theme 가 경로(./hossam 등)면 손대지 않고 Slidev 가 그대로 읽는다.
 //       서버가 응답하면 설정에 따라 외부 브라우저(--open) 또는 VS Code Simple Browser 에 띄우고, 발표자 모드도 열 수 있다.
-//       파일마다 터미널 하나를 쓴다. 설정 목록은 package.json 의 contributes.configuration.
+//       한 번에 하나만 띄운다: 다른 파일을 열면 이전 서버의 터미널을 닫아 끄고 새 파일로 띄운다 (같은 파일은 onRerun 설정대로). 설정 목록은 package.json 의 contributes.configuration.
 const path = require('path')
 const fs = require('fs')
 const net = require('net')
@@ -232,6 +232,7 @@ function waitForServer(url, timeoutMs = 300000, isCancelled = () => false) {
 
 // ---------- 익스텐션 ----------
 const sessions = new Map()   // 파일 경로 → { terminal, port, url }
+let launchSeq = 0            // 마지막 실행 명령의 번호. 마지막 명령이 이긴다: 그 사이 다른 파일이 열렸으면 준비 중이던 실행은 서버를 띄우지 않는다
 const starting = new Set()   // 아직 시작하는 중인 파일 경로 (Slidev 내려받기 ~ 서버 응답 전). 그동안 같은 파일을 다시 열면 새로 띄우지 않는다
 const notified = new Set()   // 프런트매터 테마 경고를 띄운 이름 ("theme:<이름>")
 const DEFAULT_COMMAND = 'node "${slidev}" "${file}"'
@@ -484,6 +485,7 @@ function activate(context) {
   /** 파일 하나를 Slidev 로 띄운다 (open 에서 검사가 끝난 뒤). */
   const launch = async (file, root, previewIn, customCommand) => {
     const c = cfg()
+    const seq = ++launchSeq
     const existing = sessions.get(file)
     if (existing && existing.terminal.exitStatus === undefined) {
       // 서버가 실제로 응답하는지 먼저 확인한다. 응답하면(살아 있음) 그 터미널·탭을 보여 주고,
@@ -496,6 +498,10 @@ function activate(context) {
       }
       existing.terminal.dispose(); sessions.delete(file)
     }
+    // 한 번에 하나만: 다른 파일의 서버가 돌고 있으면 그 터미널을 닫아 Slidev 를 끝내고 새 파일로 띄운다. 같은 포트를 이어받도록 포트가 비기를 잠깐(최대 3초) 기다린다.
+    const others = [...sessions].filter(([k]) => k !== file)
+    for (const [k, s] of others) { s.terminal.dispose(); sessions.delete(k) }
+    for (const [, s] of others) for (let i = 0; i < 10 && !(await portFree(s.port, '127.0.0.1') && await portFree(s.port, '::1')); i++) await new Promise(r => setTimeout(r, 300))
 
     // 쓸 Slidev: 로컬 → 전역(없으면 터미널에서 설치, 취소 가능). command 를 직접 바꾼 사용자는 ${slidev} 를 썼을 때만 찾는다.
     const template = customCommand ? c.get('command').trim() : DEFAULT_COMMAND
@@ -533,6 +539,7 @@ function activate(context) {
       vscode.window.showWarningMessage(`Open with Slidev: 프런트매터의 theme '${themeMissing}' 가 프로젝트에 설치돼 있지 않고 내장 목록에도 없습니다. Slidev 가 터미널에서 npm 설치 여부를 묻고, npm 에 그 패키지가 없으면 실패합니다.${pathHint}`)
     }
 
+    if (seq !== launchSeq) return   // 준비하는 사이(설치·테마 내려받기) 다른 파일을 열었다: 그쪽이 띄운다
     const terminal = vscode.window.createTerminal({ name: `Slidev: ${path.basename(file)}`, cwd: root })
     sessions.set(file, { terminal, port, url })
     terminal.show(previewIn === 'vscode')
@@ -554,7 +561,8 @@ function activate(context) {
         const t0 = Date.now()
         const tickMsg = () => progress.report({ message: `Slidev 서버 시작 중 · 포트 ${port} · ${Math.round((Date.now() - t0) / 1000)}초` })
         tickMsg(); const timer = setInterval(tickMsg, 1000)
-        return waitForServer(url, 300000, () => token.isCancellationRequested || ended !== null).finally(() => clearInterval(timer))
+        // 터미널이 닫히면(다른 파일을 열어 끔, 직접 닫음, stopOnClose) 더 기다리지 않는다
+        return waitForServer(url, 300000, () => token.isCancellationRequested || ended !== null || sessions.get(file)?.terminal !== terminal).finally(() => clearInterval(timer))
       })
     endSub?.dispose()
     if (ended) {   // 터미널은 오류 출력을 볼 수 있게 남겨 둔다
@@ -565,7 +573,7 @@ function activate(context) {
       vscode.window.showErrorMessage(`Open with Slidev: Slidev 가 서버를 띄우지 못하고 종료됐습니다(종료 코드 ${ended.exitCode ?? '알 수 없음'}). 터미널 출력을 확인하세요.${hint}`)
       return
     }
-    if (up === 'cancelled') { terminal.dispose(); sessions.delete(file); return }
+    if (up === 'cancelled') { terminal.dispose(); if (sessions.get(file)?.terminal === terminal) sessions.delete(file); return }
     if (!up) { vscode.window.showWarningMessage(`Open with Slidev: ${url} 이 5분 안에 응답하지 않습니다. 터미널 출력을 확인하세요.`); return }
     if (previewIn === 'vscode') await vscode.commands.executeCommand('simpleBrowser.show', url, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false })
     if (c.get('openPresenter', false)) vscode.env.openExternal(vscode.Uri.parse(url + 'presenter/'))
