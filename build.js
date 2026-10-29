@@ -9,6 +9,9 @@ const os = require('os')
 const { pathToFileURL } = require('url')
 
 const info = JSON.parse(Buffer.from(process.argv[2] || '', 'base64url').toString('utf8'))
+// Themes that load grammar files from Slidev's dependencies (hossam's setup/shiki.ts) cannot resolve them from this
+// script's folder (the extension ships without node_modules), so tell them where the @slidev/cli package is.
+if (info.slidevPath) process.env.SLIDEV_CLI_PATH = info.slidevPath
 
 /** Vite plugin: one JS chunk and one CSS file, inlined into index.html. */
 const singleFile = {

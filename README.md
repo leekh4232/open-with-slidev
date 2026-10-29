@@ -159,7 +159,7 @@ sidebar: true      # 생략하면 켬
 6. 루트에서 `command`(`${slidev}`는 3번의 실행 파일, `${file}`은 상대 경로)에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다. 터미널에는 확장에 든 실행기(`node launch.js …`) 한 줄만 보내고, 실행기가 배너를 찍은 뒤 그 명령을 같은 터미널에서 돌립니다.
 7. 서버가 HTTP 응답을 줄 때까지(최대 5분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
 
-**Build with Slidev**는 1 ~ 3, 5번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 3번에서 정한 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다. PDF · PPTX · PNG · Markdown은 3번 뒤 `playwright-chromium`을 준비하고(프로젝트 → 전역 순으로 찾고, 없으면 터미널에서 전역 설치), 5번으로 정한 테마를 `--theme`로 넘겨 루트에서 `node <slidev.mjs> export …`를 실행합니다.
+**Build with Slidev**는 1 ~ 3, 5번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 3번에서 정한 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다. 그 Slidev의 `@slidev/cli` 패키지 폴더는 환경 변수 `SLIDEV_CLI_PATH`로 넘기므로, 테마가 Slidev에 든 패키지(예: 코드 문법 파일)를 찾을 때 이 경로를 쓸 수 있습니다. PDF · PPTX · PNG · Markdown은 3번 뒤 `playwright-chromium`을 준비하고(프로젝트 → 전역 순으로 찾고, 없으면 터미널에서 전역 설치), 5번으로 정한 테마를 `--theme`로 넘겨 루트에서 `node <slidev.mjs> export …`를 실행합니다.
 
 ## 설치
 

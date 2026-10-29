@@ -4,6 +4,11 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.8.6] - 2026-10-29
+
+### 수정
+- **HTML 빌드(Build with Slidev)가 `hossam` 테마 덱에서 `Cannot find module '@shikijs/langs/python'`으로 실패하던 문제를 고쳤습니다.** 테마는 프롬프트 상자의 python 코드를 칠하려고 Slidev에 든 문법 파일을 찾는데, 확장의 빌더(`build.js`)로 띄우면 확장 폴더에서 찾다가 실패했습니다. 이제 빌더가 쓰는 `@slidev/cli` 패키지 폴더를 환경 변수 `SLIDEV_CLI_PATH`로 넘기고, 테마는 그 경로에서 먼저 찾습니다(테마 쪽 수정은 slidev-themes 저장소. 테마를 `git pull`해야 적용됩니다).
+
 ## [0.8.5] - 2026-10-29
 
 ### 변경
