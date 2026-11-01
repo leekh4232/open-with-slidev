@@ -35,7 +35,7 @@ VS Code 확장 **Open with Slidev**(`leekh.open-with-slidev`) 저장소입니다
 - 소개 페이지(`index.html`)는 **이 확장이 무슨 일을 하는지만** 짧게 씁니다. 설정 이름 · 기본값 · 내부 동작은 README에 둡니다. 기능 카드는 짝수 개(지금 6개)를 유지합니다. Marketplace · GitHub · 테마 사이트 링크는 페이지 본문(버튼 · 배지 · 바닥글)에 넣습니다.
 - **테마 매뉴얼 · 화면 캡처 · 예제 덱은 이 저장소에 두지 않습니다.** slidev-themes 저장소의 `docs/`(https://slidev-themes.hossam.kr)에 있습니다. 소개 페이지의 테마 그림도 그 사이트의 `img/`를 가리킵니다.
 - 바꾼 뒤 예전 표현이 남았는지 검색합니다 (예: 제거한 설정 이름, 옛 주소).
-- `docs/**`, `*.html`, `CLAUDE.md`는 `.vscodeignore`로 VSIX에서 빠집니다.
+- `docs/**`, `*.html`, `CLAUDE.md`, `.claude/`는 `.vscodeignore`로 VSIX에서 빠집니다.
 
 ### 3. 로컬에 설치해서 테스트
 

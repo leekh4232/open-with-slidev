@@ -11,3 +11,4 @@ icon.svg
 docs/**
 *.nb.md
 CLAUDE.md
+.claude/**
