@@ -314,7 +314,7 @@
   "devDependencies": {
     "@slidev/cli": "^53.0.0",
     "@slidev/theme-default": "^0.25.0",
-    "@vscode/vsce": "^3"
+    "@vscode/vsce": "^4.1.0"
   },
   "scripts": {
     "package": "vsce package --no-dependencies",

@@ -1,7 +1,8 @@
 # ipynb-to-pdf-converter 저장소의 워크플로와 같은 규칙:
 #  - main 에 push 된 커밋 메시지에 "build" 가 있을 때만 실행
 #  - 메시지에 major / minor 가 있으면 그 단위로, 아니면 patch 로 버전을 올린다
-#  - VSIX 를 만들어 아티팩트로 올리고, VSCE_PAT 시크릿이 있으면 Marketplace 에 publish
+#  - VSIX 를 만들어 아티팩트로 올리고, Trusted Publishing(OIDC)으로 Marketplace 에 publish
+#    (Marketplace 게시자 페이지에 이 저장소 · 워크플로용 정책이 있어야 한다)
 #  - 버전 커밋([skip ci])과 v태그를 push 하고 GitHub Release 에 VSIX 를 첨부
 name: Build and Publish
 
@@ -15,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -62,10 +64,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish to VSCode Marketplace
-        if: ${{ env.VSCE_PAT != '' }}
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx --no-install vsce publish --no-dependencies -p "$VSCE_PAT"
+        run: npx --no-install vsce publish --no-dependencies --oidc
 
       - name: Commit and tag version bump
         run: |
