@@ -15,7 +15,7 @@
 ## 할 수 있는 것
 
 - **우클릭 한 번으로 실행**: 편집기 본문, 편집기 탭, 탐색기의 `.md` 파일 어디서든 메뉴가 보입니다.
-- **설치 없이 시작**: Slidev가 설치된 프로젝트가 md 파일 위쪽에 있으면 그 Slidev로, 없으면 전역(`npm -g`) Slidev로 실행합니다. 전역에도 없으면 처음 한 번 터미널에서 설치하고 그 경로를 설정에 기록합니다. 저장소마다 `node_modules`를 만들지 않습니다.
+- **Slidev 자동 탐색**: Slidev가 설치된 프로젝트가 md 파일 위쪽에 있으면 그 Slidev로, 없으면 전역(`npm -g`) Slidev로 실행하고 그 경로를 설정에 기록합니다. 전역에도 없으면 터미널에서 직접 설치할 명령을 알림으로 안내합니다. 저장소마다 `node_modules`를 만들지 않습니다.
 - **한 번에 하나**: 다른 md를 열면 이전에 띄운 서버를 끄고 새 파일로 다시 띄웁니다. 설정한 포트가 다른 프로그램에 막혀 있으면 1씩 올려 최대 3회 다시 시도합니다.
 - **진행 상황 표시**: 터미널에 파일·루트·포트·테마·실행 명령을 색이 입혀진 영어 배너로 보여 주고, 서버가 뜰 때까지 경과 시간이 보이는 알림을 띄웁니다(취소 가능).
 - **미리보기 위치 선택**: 외부 브라우저 또는 VS Code 안 Simple Browser 탭(편집기 옆) 중 고를 수 있습니다.
@@ -29,11 +29,21 @@
 
 ## 준비물
 
-Node.js 18 이상만 있으면 됩니다. **Slidev를 미리 설치하지 않아도 됩니다.**
+Node.js 18 이상과 전역 Slidev가 필요합니다. **확장을 설치한 뒤 터미널에서 Slidev를 직접 한 번 설치하세요.**
+
+```sh
+npm install -g @slidev/cli @slidev/theme-default
+```
+
+- 권한 오류(`EACCES`, `EPERM`)가 나면 Windows는 관리자 권한으로 연 터미널에서, macOS · Linux는 앞에 `sudo`를 붙여 실행합니다.
+- Slidev가 설치된 프로젝트에서만 쓴다면 전역 설치는 필요 없습니다.
+
+Slidev는 이렇게 찾습니다.
+
 
 - Slidev가 설치된 프로젝트(`node_modules/@slidev/cli`)가 md 파일 위쪽에 있으면 그 Slidev로 실행합니다. 버전을 고정한 저장소를 그대로 존중합니다.
 - 없으면 전역 Slidev(`npm install -g`로 설치한 `@slidev/cli`)로 실행합니다. 설정 `openWithSlidev.slidevPath`에 적힌 경로 → `npm root -g` → PATH의 `slidev` 순으로 찾고, 찾은 `@slidev/cli` 패키지 폴더를 그 설정에 기록해 다음부터는 바로 씁니다. 미리 적어 둘 수도 있습니다.
-- 전역에도 없으면 처음 한 번 VS Code 터미널에서 `npm install -g @slidev/cli @slidev/theme-default`를 실행합니다(환경에 따라 sudo 비밀번호를 물을 수 있어 터미널에서 돌립니다). 끝나면 경로를 설정에 기록하고 바로 띄웁니다. 알림에서 취소할 수 있고, 실패하면 직접 설치할 명령을 안내합니다. 확장이 저장소에 `package.json`이나 패키지를 설치하지는 않습니다.
+- 전역에도 없으면 확장은 설치하지 않고, 위 명령을 터미널에서 직접 실행하라는 알림을 띄웁니다. 알림의 **터미널 열기**는 새 터미널에 명령을 입력만 해 두고(Enter로 실행), **명령 복사**는 클립보드에 복사합니다. 설치가 끝나면 **설치 확인**을 누르면 다시 찾아 경로를 기록하고 바로 띄웁니다. 확장이 저장소에 `package.json`이나 패키지를 설치하지는 않습니다.
 - 프런트매터의 `theme: ./내테마`처럼 폴더로 가리키는 테마는 그대로 되고, npm 테마 패키지는 Slidev가 터미널에서 설치 여부를 묻습니다.
 - `openWithSlidev.command`를 바꾸면(예: `pnpm exec slidev "${file}"`) 그 명령을 그대로 씁니다.
 
@@ -125,7 +135,7 @@ sidebar: true      # 생략하면 켬
 |---|---|---|
 | `openWithSlidev.previewIn` | `browser` | `browser`: 외부 브라우저에서 엽니다. `vscode`: VS Code 안 Simple Browser 탭을 편집기 옆에 엽니다. |
 | `openWithSlidev.command` | `node "${slidev}" "${file}"` | 실행 명령. `${slidev}`는 쓸 Slidev 실행 파일(프로젝트의 `node_modules/@slidev/cli`가 있으면 그것, 없으면 전역 설치의 `bin/slidev.mjs`), `${file}`은 프로젝트 루트 기준 md 상대 경로, `${root}`는 프로젝트 루트로 바뀝니다. 포트, `--open`, 테마, 추가 인자는 뒤에 자동으로 붙습니다. 직접 바꾸면 그 명령을 그대로 씁니다. 예: `pnpm exec slidev "${file}"` |
-| `openWithSlidev.slidevPath` | (자동) | 전역 Slidev의 `@slidev/cli` 패키지 폴더(예: `/opt/homebrew/lib/node_modules/@slidev/cli`). 비우면 처음 실행 때 자동으로 찾아 기록하고, 없으면 터미널에서 설치한 뒤 기록합니다. 미리 적어 둘 수 있습니다. 사용자 설정에 기기별로 저장됩니다. |
+| `openWithSlidev.slidevPath` | (자동) | 전역 Slidev의 `@slidev/cli` 패키지 폴더(예: `/opt/homebrew/lib/node_modules/@slidev/cli`). 비우면 처음 실행 때 자동으로 찾아 기록하고, 없으면 직접 설치하라고 안내합니다. 미리 적어 둘 수 있습니다. 사용자 설정에 기기별로 저장됩니다. |
 | `openWithSlidev.extraArgs` | (없음) | 명령 끝에 덧붙일 인자. 예: `--remote`(다른 기기에서 접속), `--log info` |
 | `openWithSlidev.onRerun` | `focus` | 같은 파일을 다시 열 때 `focus`는 기존 터미널을 보여 주고 슬라이드를 `previewIn`에 맞춰 다시 엽니다(`browser`면 브라우저 새 탭, `vscode`면 Simple Browser). `restart`는 서버를 끄고 다시 띄웁니다. |
 | `openWithSlidev.port` | `3030` | 시작 포트. 다른 프로그램이 쓰고 있으면 1씩 올려 최대 3회 다시 시도합니다. |
@@ -153,7 +163,7 @@ sidebar: true      # 생략하면 켬
 
 1. 파일이 `filePatterns`에 맞는지 확인하고, 수정 중이면 저장합니다.
 2. 프로젝트 루트를 정합니다. `projectRoot` 설정 → 자동 탐색 → 워크스페이스 폴더 → 파일 폴더 순입니다. 같은 파일의 서버가 아직 시작 중이면 새로 띄우지 않고 그 터미널을 보여 줍니다. 다른 파일의 서버가 돌고 있으면 그 터미널을 닫아 끕니다(한 번에 하나).
-3. 쓸 Slidev를 정합니다. 루트(또는 위쪽)의 `node_modules/@slidev/cli`가 있으면 그것, 없으면 전역 Slidev입니다. 전역은 `slidevPath` 설정 → `npm root -g` → PATH 순으로 찾아 설정에 기록하고, 없으면 터미널에서 `npm install -g`로 설치합니다.
+3. 쓸 Slidev를 정합니다. 루트(또는 위쪽)의 `node_modules/@slidev/cli`가 있으면 그것, 없으면 전역 Slidev입니다. 전역은 `slidevPath` 설정 → `npm root -g` → PATH 순으로 찾아 설정에 기록하고, 없으면 터미널에서 `npm install -g`로 직접 설치하라고 알립니다(설치 확인을 누르면 다시 찾습니다).
 4. `port`부터 비어 있는 포트를 찾습니다(다른 프로그램이 쓰고 있으면 +1, 최대 3회).
 5. 테마를 정합니다. 프런트매터의 테마 이름이 프로젝트에 없고 내장 목록에 있으면 캐시에서, 프런트매터에 테마가 없으면 `defaultThemePath` 또는 `defaultTheme`에서 가져와 `--theme`로 넘깁니다.
 6. 루트에서 `command`(`${slidev}`는 3번의 실행 파일, `${file}`은 상대 경로)에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다. 터미널에는 확장에 든 실행기(`node launch.js …`) 한 줄만 보내고, 실행기가 배너를 찍은 뒤 그 명령을 같은 터미널에서 돌립니다.

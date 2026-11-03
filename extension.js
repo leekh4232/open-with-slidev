@@ -2,8 +2,8 @@
 // 동작: md 파일 폴더에서 위로 올라가며 Slidev 가 설치된 프로젝트(node_modules/.bin/slidev 또는 package.json 의 @slidev/cli)를 찾고
 //       (projectRoot 설정이 있으면 그 폴더), 빈 포트를 골라 그 폴더의 터미널에서 `node <slidev.mjs> <상대경로> --port N …` 을 실행한다.
 //       쓰는 Slidev: 프로젝트(루트 위쪽 node_modules/@slidev/cli)에 있으면 그것(버전을 고정한 저장소 존중), 없으면 전역 설치(npm -g).
-//       전역도 없으면 처음 한 번 VS Code 터미널에서 `npm install -g @slidev/cli @slidev/theme-default` 를 돌리고(sudo 가 필요한 환경도 있어 자식 프로세스가 아니라 터미널),
-//       찾았거나 설치한 패키지 폴더를 설정 openWithSlidev.slidevPath 에 기록해 그 뒤로는 실행·빌드에 바로 쓴다. 저장소마다 node_modules 를 만들지 않는다.
+//       전역도 없으면 `npm install -g @slidev/cli @slidev/theme-default` 를 터미널에서 직접 실행하라고 알림으로 안내한다(자동 설치는 권한 오류가 날 수 있어 하지 않는다).
+//       찾은 패키지 폴더를 설정 openWithSlidev.slidevPath 에 기록해 그 뒤로는 실행·빌드에 바로 쓴다. 저장소마다 node_modules 를 만들지 않는다.
 //       내장 테마(themes.json): 프런트매터 theme 이름이나 defaultTheme 설정이 목록에 있으면 캐시 폴더에 npm 으로 내려받아 --theme 절대 경로로 넘긴다.
 //       프런트매터 theme 가 경로(./hossam 등)면 손대지 않고 Slidev 가 그대로 읽는다.
 //       서버가 응답하면 설정에 따라 외부 브라우저(--open) 또는 VS Code Simple Browser 에 띄우고, 발표자 모드도 열 수 있다.
@@ -326,10 +326,9 @@ function activate(context) {
     }))
   }
   /** 전역 Slidev 의 @slidev/cli 패키지 폴더를 돌려준다. 설정 slidevPath → npm root -g → PATH 순으로 찾고, 찾은 경로는 설정(사용자 전역)에 기록한다.
-   *  없으면 터미널에서 `npm install -g` 로 설치한 뒤 같은 순서로 찾아 기록한다. 실패·취소하면 null (안내 표시).
+   *  없으면 터미널에서 `npm install -g` 로 직접 설치하라고 알리고, 사용자가 '설치 확인'을 누르면 다시 찾는다. 알림을 닫으면 null.
    *  파일 여럿을 연달아 열어도 탐지·설치는 한 번만 돌고 모두 그 결과를 기다린다. */
   const installCmd = `${NPM} install -g ${GLOBAL_PKGS.join(' ')}`
-  const globalFromNpm = async () => { const g = await npmGlobalRoot(); const d = g && path.join(g, '@slidev', 'cli'); return slidevPkgOk(d) ? d : null }
   let globalSlidev = null   // 진행 중인 탐지·설치 Promise
   /** 찾은 경로를 설정에 기록한다. 업데이트 직후 창을 다시 불러오기 전에는 설정이 아직 등록되지 않아 쓰기가 실패할 수 있다.
    *  기록은 캐시일 뿐이라 실패해도 실행은 계속한다 (다음에 다시 찾는다). */
@@ -353,22 +352,19 @@ function activate(context) {
           }
           return found.dir
         }
-        vscode.window.showInformationMessage(`Open with Slidev: 전역 Slidev 가 없어 터미널에서 설치합니다 (${installCmd}). 처음 한 번, 수 분 걸릴 수 있습니다.`)
-        const r = await runInstallTerminal('Slidev', installCmd, globalFromNpm)
-        if (r === 'cancelled') { out.appendLine('[Open with Slidev] 설치를 취소했습니다.'); return null }
-        const after = await detectGlobalSlidev('')
-        if (after) {
-          const recorded = await recordSlidevPath(after.dir)
-          vscode.window.showInformationMessage(`Open with Slidev: Slidev 를 설치했습니다 (${after.dir}).${recorded ? ' 설정 openWithSlidev.slidevPath 에 기록했고, 다음부터는 바로 뜹니다.' : ''}`)
-          return after.dir
-        }
-        const pick = await vscode.window.showErrorMessage(`Open with Slidev: 설치가 끝났지만 전역 Slidev 를 찾지 못했습니다. 터미널 출력을 확인하세요. 직접 설치하려면: ${installCmd} (권한 오류면 sudo). 이미 설치돼 있으면 설정 openWithSlidev.slidevPath 에 @slidev/cli 폴더 경로를 적으세요.`, '다시 시도')
-        if (pick !== '다시 시도') return null
+        // 자동 설치는 하지 않는다: 윈도우 등에서 전역 설치가 권한 오류로 실패할 수 있어, 사용자가 터미널에서 직접 설치하게 안내한다.
+        const pick = await vscode.window.showWarningMessage(`Open with Slidev: Slidev 가 설치돼 있지 않습니다. 터미널에서 ${installCmd} 를 직접 실행해 설치한 뒤 '설치 확인'을 누르세요. '터미널 열기'를 누르면 명령을 입력해 두니 Enter 만 누르면 됩니다. 권한 오류가 나면 Windows 는 관리자 권한으로 연 터미널에서, macOS·Linux 는 앞에 sudo 를 붙여 실행하세요. 이미 설치돼 있으면 설정 openWithSlidev.slidevPath 에 @slidev/cli 폴더 경로를 적으세요.`, '터미널 열기', '명령 복사', '설치 확인')
+        if (pick === '터미널 열기') {
+          const t = vscode.window.createTerminal({ name: 'Slidev 설치' })
+          t.show()
+          t.sendText(installCmd, false)   // 실행하지 않고 입력만 해 둔다
+        } else if (pick === '명령 복사') await vscode.env.clipboard.writeText(installCmd)
+        else if (pick !== '설치 확인') return null
       }
     })().finally(() => { globalSlidev = null })
     return globalSlidev
   }
-  /** root 에서 쓸 @slidev/cli 패키지 폴더: 프로젝트 로컬이 있으면 로컬, 없으면 전역(없으면 설치). 실패·취소하면 null. */
+  /** root 에서 쓸 @slidev/cli 패키지 폴더: 프로젝트 로컬이 있으면 로컬, 없으면 전역(없으면 설치 안내). 찾지 못하면 null. */
   const ensureSlidev = async root => localSlidevPkg(root) || ensureSlidevGlobal()
   /** 카탈로그 테마를 캐시에 준비하고 그 경로를 돌려준다. 실패·취소하면 null (안내 메시지 표시). */
   const ensureTheme = async (entry) => {
@@ -514,7 +510,7 @@ function activate(context) {
     for (const [k, s] of others) { s.terminal.dispose(); sessions.delete(k) }
     for (const [, s] of others) for (let i = 0; i < 10 && !(await portFree(s.port, '127.0.0.1') && await portFree(s.port, '::1')); i++) await new Promise(r => setTimeout(r, 300))
 
-    // 쓸 Slidev: 로컬 → 전역(없으면 터미널에서 설치, 취소 가능). command 를 직접 바꾼 사용자는 ${slidev} 를 썼을 때만 찾는다.
+    // 쓸 Slidev: 로컬 → 전역(없으면 직접 설치하라고 안내). command 를 직접 바꾼 사용자는 ${slidev} 를 썼을 때만 찾는다.
     const template = customCommand ? c.get('command').trim() : DEFAULT_COMMAND
     let bin = ''
     if (!customCommand || template.includes('${slidev}')) {
