@@ -23,7 +23,7 @@
 - **폴더 테마**: 프런트매터에 `theme: ./slidev-themes/hossam`처럼 경로를 적으면 그 폴더를 그대로 씁니다. 테마를 고치면 다시 열 때 바로 반영됩니다.
 - **발표자 모드**: 원하면 `/presenter` 화면도 함께 엽니다.
 - **HTML 파일 하나로 빌드**: md 옆에 같은 이름의 `.html` 하나를 만듭니다. 서버 없이 더블클릭으로 열리고, 메일이나 메신저로 그 파일만 보내면 됩니다. 탐색기에서 md를 여러 개 선택하면 차례로 모두 만듭니다.
-- **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. 처음 한 번 Playwright(Chromium)를 전역으로 설치합니다.
+- **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. Playwright(Chromium)가 필요하며, 없으면 직접 설치할 명령을 알림으로 안내합니다.
 - **Teacher Mode(선택)**: 켜면 하위 메뉴에 `hossam build`·`jussam build`가 더 보입니다. 강사명 자리를 선생님 이름으로 바꾼 복사본으로 HTML과 비밀번호가 걸린 PDF를 만듭니다(원본 md는 그대로).
 - **터미널에서 실행**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주고 슬라이드를 브라우저(또는 Simple Browser)에 다시 띄우거나(기본) 서버를 다시 띄웁니다.
 
@@ -37,6 +37,7 @@ npm install -g @slidev/cli @slidev/theme-default
 
 - 권한 오류(`EACCES`, `EPERM`)가 나면 Windows는 관리자 권한으로 연 터미널에서, macOS · Linux는 앞에 `sudo`를 붙여 실행합니다.
 - Slidev가 설치된 프로젝트에서만 쓴다면 전역 설치는 필요 없습니다.
+- PDF · PPTX · PNG · Markdown으로 내보내려면 `npm install -g playwright-chromium`도 한 번 실행합니다(Chromium을 함께 받아 수백 MB). HTML 빌드와 슬라이드 실행에는 필요 없습니다.
 
 Slidev는 이렇게 찾습니다.
 
@@ -83,7 +84,7 @@ Slidev는 이렇게 찾습니다.
 #### PDF · PPTX · PNG · Markdown
 
 - **Open with Slidev**와 같은 Slidev(프로젝트의 `@slidev/cli`, 없으면 전역)로 `slidev export --format <형식> --output <결과>`를 실행합니다. 테마도 같은 규칙으로 정합니다. 프런트매터의 `exportFilename`보다 위 표의 이름이 우선합니다.
-- **처음 한 번 Playwright를 설치합니다.** Slidev는 브라우저로 슬라이드를 찍어 내보내므로 `playwright-chromium`이 필요합니다. 프로젝트에 있으면 그것을, 없으면 전역(`npm -g`)에서 찾고, 그것도 없으면 터미널에서 `npm install -g playwright-chromium`을 실행합니다(Chromium도 함께 받아 수백 MB, 수 분 걸릴 수 있음). 전역 하나로 모든 프로젝트에서 씁니다. 알림에서 취소할 수 있습니다.
+- **Playwright가 필요합니다.** Slidev는 브라우저로 슬라이드를 찍어 내보내므로 `playwright-chromium`이 필요합니다. 프로젝트에 있으면 그것을, 없으면 전역(`npm -g`)에서 찾습니다. 그것도 없으면 확장은 설치하지 않고, 터미널에서 `npm install -g playwright-chromium`을 직접 실행하라는 알림을 띄웁니다(Chromium도 함께 받아 수백 MB, 수 분 걸릴 수 있음). 알림의 **터미널 열기** · **명령 복사** · **설치 확인**은 Slidev 설치 알림과 같습니다. 전역 하나로 모든 프로젝트에서 씁니다.
 - `slides-png/` 폴더는 내보낼 때마다 비우고 다시 만듭니다. PNG가 아닌 파일이 들어 있으면 먼저 묻습니다. PDF · PPTX는 같은 이름 파일을 덮어씁니다.
 - 내보내는 동안 우측 하단 알림에 경과 시간이 보이고 거기서 취소할 수 있습니다. 출력 창 **Open with Slidev**은 자동으로 열리지 않고(Slidev 출력은 거기에 쌓이며, 실패했을 때만 자동으로 열립니다) 끝나면 **열기** · **폴더에서 보기** 버튼이 나옵니다. HTML · PDF 등 서로 다른 형식은 동시에 내보낼 수 있습니다.
 
@@ -169,7 +170,7 @@ sidebar: true      # 생략하면 켬
 6. 루트에서 `command`(`${slidev}`는 3번의 실행 파일, `${file}`은 상대 경로)에 `--port`, `--open`(브라우저 모드), `--theme`(필요할 때), `extraArgs`를 붙여 터미널에서 실행합니다. 터미널에는 확장에 든 실행기(`node launch.js …`) 한 줄만 보내고, 실행기가 배너를 찍은 뒤 그 명령을 같은 터미널에서 돌립니다.
 7. 서버가 HTTP 응답을 줄 때까지(최대 5분) 경과 시간 알림을 보여 준 뒤 미리보기와 발표자 모드를 엽니다. 서버가 뜨기 전에 Slidev 명령이 끝나면(테마 설치 실패, 문법 오류 등) 기다리지 않고 종료 코드와 함께 바로 알립니다(터미널 셸 통합이 켜진 경우).
 
-**Build with Slidev**는 1 ~ 3, 5번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 3번에서 정한 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다. 그 Slidev의 `@slidev/cli` 패키지 폴더는 환경 변수 `SLIDEV_CLI_PATH`로 넘기므로, 테마가 Slidev에 든 패키지(예: 코드 문법 파일)를 찾을 때 이 경로를 쓸 수 있습니다. PDF · PPTX · PNG · Markdown은 3번 뒤 `playwright-chromium`을 준비하고(프로젝트 → 전역 순으로 찾고, 없으면 터미널에서 전역 설치), 5번으로 정한 테마를 `--theme`로 넘겨 루트에서 `node <slidev.mjs> export …`를 실행합니다.
+**Build with Slidev**는 1 ~ 3, 5번까지 같고, 그 뒤 확장에 든 빌더(`node build.js …`)를 루트에서 실행합니다. 빌더는 3번에서 정한 Slidev로 해시 라우팅(`#/2`)과 코드 분할 없이 빌드하면서 이미지 등 자원을 모두 data URI로 넣고, JS와 CSS를 `index.html` 안으로 옮긴 뒤 md 옆 `<이름>.html`로 복사합니다. 그 Slidev의 `@slidev/cli` 패키지 폴더는 환경 변수 `SLIDEV_CLI_PATH`로 넘기므로, 테마가 Slidev에 든 패키지(예: 코드 문법 파일)를 찾을 때 이 경로를 쓸 수 있습니다. PDF · PPTX · PNG · Markdown은 3번 뒤 `playwright-chromium`을 준비하고(프로젝트 → 전역 순으로 찾고, 없으면 직접 설치하라고 안내), 5번으로 정한 테마를 `--theme`로 넘겨 루트에서 `node <slidev.mjs> export …`를 실행합니다.
 
 ## 설치
 

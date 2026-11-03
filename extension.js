@@ -289,41 +289,19 @@ function activate(context) {
     })
   }
   const installWithProgress = (what, pkgs) => withInstallProgress(what, `cd "${cacheDir}" && npm install --save ${pkgs.join(' ')}`, opts => npmInstall(cacheDir, pkgs, opts))
-  /** VS Code 터미널에서 전역 설치 명령을 돌리고 끝나기를 기다린다. 자식 프로세스가 아니라 터미널인 이유: 전역 설치는 환경에 따라 sudo 비밀번호가 필요하고,
-   *  진행 로그를 사용자가 그대로 보는 편이 낫다. VS Code 권장 패턴대로, 셸 통합(VS Code 1.93+)이 켜지면 executeCommand 로 보내고 onDidEndTerminalShellExecution 으로 끝남을 안다.
-   *  3초 안에 셸 통합이 켜지지 않으면(cmd.exe, 꺼 둔 경우 …) sendText 로 보내고, 5초마다 verify() 로 패키지 폴더를 보다가 그 안의 node_modules 항목 수가
-   *  두 번 연속 같으면(npm 이 의존성을 다 풀어 놓음) 끝난 것으로 본다 — 휴리스틱이라 postinstall(Playwright 의 Chromium 내려받기)이 남아 있을 수는 있다.
-   *  돌려주는 값: 'done' · 'cancelled'(터미널을 닫아 npm 도 끝낸다). 결과 확인은 호출한 쪽이 한다. */
-  const runInstallTerminal = (what, command, verify) => {
-    const terminal = vscode.window.createTerminal({ name: `Slidev: ${what} 설치` })
-    terminal.show(true)
-    out.appendLine(`[Open with Slidev] ${what} 설치 (터미널): ${command}`)
-    return vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Open with Slidev', cancellable: true }, (progress, token) => new Promise(resolve => {
-      const t0 = Date.now()
-      const tick = () => progress.report({ message: `${what} 설치 중 — 터미널을 보세요 (처음 한 번, 수 분 걸릴 수 있음) · ${Math.round((Date.now() - t0) / 1000)}초` })
-      tick(); const timer = setInterval(tick, 1000)
-      const subs = []
-      let pollTimer = null, finished = false, sent = false
-      const finish = r => { if (finished) return; finished = true; clearInterval(timer); clearTimeout(pollTimer); for (const s of subs) s.dispose(); resolve(r) }
-      subs.push(token.onCancellationRequested(() => { finish('cancelled'); terminal.dispose() }))
-      subs.push(vscode.window.onDidCloseTerminal(t => { if (t === terminal) finish('done') }))
-      const viaShell = si => { if (sent) return; sent = true; si.executeCommand(command) }
-      if (vscode.window.onDidChangeTerminalShellIntegration) {
-        subs.push(vscode.window.onDidEndTerminalShellExecution(e => { if (e.terminal === terminal) finish('done') }))
-        subs.push(vscode.window.onDidChangeTerminalShellIntegration(e => { if (e.terminal === terminal) viaShell(e.shellIntegration) }))
-        if (terminal.shellIntegration) viaShell(terminal.shellIntegration)
-      }
-      let last = -1
-      const poll = async () => {
-        const dir = await verify()
-        let n = 0
-        if (dir) { try { n = fs.readdirSync(path.join(dir, 'node_modules')).length } catch { n = 0 } }
-        if (dir && n === last) return finish('done')
-        last = n
-        pollTimer = setTimeout(poll, 5000)
-      }
-      pollTimer = setTimeout(() => { if (finished || sent) return; sent = true; terminal.sendText(command); poll() }, 3000)
-    }))
+  /** 전역 설치가 필요할 때 자동으로 설치하지 않고(윈도우 등에서 권한 오류로 실패할 수 있다) 터미널에서 직접 실행하라고 알린다.
+   *  '터미널 열기'는 명령을 입력만 해 두고(Enter 로 실행), '명령 복사'는 클립보드에 복사한 뒤 알림을 다시 띄운다.
+   *  '설치 확인'을 누르면 true, 알림을 닫으면 false. note 는 알림 끝에 덧붙일 문장. */
+  const askManualInstall = async (title, what, command, note = '') => {
+    for (;;) {
+      const pick = await vscode.window.showWarningMessage(`${title}: ${what} 가 설치돼 있지 않습니다. 터미널에서 ${command} 를 직접 실행해 설치한 뒤 '설치 확인'을 누르세요. '터미널 열기'를 누르면 명령을 입력해 두니 Enter 만 누르면 됩니다. 권한 오류가 나면 Windows 는 관리자 권한으로 연 터미널에서, macOS·Linux 는 앞에 sudo 를 붙여 실행하세요.${note}`, '터미널 열기', '명령 복사', '설치 확인')
+      if (pick === '터미널 열기') {
+        const t = vscode.window.createTerminal({ name: `${what} 설치` })
+        t.show()
+        t.sendText(command, false)   // 실행하지 않고 입력만 해 둔다
+      } else if (pick === '명령 복사') await vscode.env.clipboard.writeText(command)
+      else return pick === '설치 확인'
+    }
   }
   /** 전역 Slidev 의 @slidev/cli 패키지 폴더를 돌려준다. 설정 slidevPath → npm root -g → PATH 순으로 찾고, 찾은 경로는 설정(사용자 전역)에 기록한다.
    *  없으면 터미널에서 `npm install -g` 로 직접 설치하라고 알리고, 사용자가 '설치 확인'을 누르면 다시 찾는다. 알림을 닫으면 null.
@@ -352,14 +330,7 @@ function activate(context) {
           }
           return found.dir
         }
-        // 자동 설치는 하지 않는다: 윈도우 등에서 전역 설치가 권한 오류로 실패할 수 있어, 사용자가 터미널에서 직접 설치하게 안내한다.
-        const pick = await vscode.window.showWarningMessage(`Open with Slidev: Slidev 가 설치돼 있지 않습니다. 터미널에서 ${installCmd} 를 직접 실행해 설치한 뒤 '설치 확인'을 누르세요. '터미널 열기'를 누르면 명령을 입력해 두니 Enter 만 누르면 됩니다. 권한 오류가 나면 Windows 는 관리자 권한으로 연 터미널에서, macOS·Linux 는 앞에 sudo 를 붙여 실행하세요. 이미 설치돼 있으면 설정 openWithSlidev.slidevPath 에 @slidev/cli 폴더 경로를 적으세요.`, '터미널 열기', '명령 복사', '설치 확인')
-        if (pick === '터미널 열기') {
-          const t = vscode.window.createTerminal({ name: 'Slidev 설치' })
-          t.show()
-          t.sendText(installCmd, false)   // 실행하지 않고 입력만 해 둔다
-        } else if (pick === '명령 복사') await vscode.env.clipboard.writeText(installCmd)
-        else if (pick !== '설치 확인') return null
+        if (!(await askManualInstall('Open with Slidev', 'Slidev', installCmd, ' 이미 설치돼 있으면 설정 openWithSlidev.slidevPath 에 @slidev/cli 폴더 경로를 적으세요.'))) return null
       }
     })().finally(() => { globalSlidev = null })
     return globalSlidev
@@ -641,24 +612,22 @@ function activate(context) {
     } finally { building.delete(key) }
   }
 
-  /** slidev export 는 Playwright(playwright-chromium)로 슬라이드를 찍는다. 프로젝트에 있으면 그것, 없으면 전역(npm -g)에서 찾고, 그것도 없으면 처음 한 번
-   *  터미널에서 전역으로 설치한다 (postinstall 이 Chromium 을 사용자 캐시에 받는다). Slidev 는 프로젝트 → 전역(resolve-global) 순으로 찾으므로 전역 하나로 모든 프로젝트에서 쓴다. */
+  /** slidev export 는 Playwright(playwright-chromium)로 슬라이드를 찍는다. 프로젝트에 있으면 그것, 없으면 전역(npm -g)에서 찾고, 그것도 없으면
+   *  터미널에서 직접 전역 설치하라고 알린다 (postinstall 이 Chromium 을 사용자 캐시에 받는다). Slidev 는 프로젝트 → 전역(resolve-global) 순으로 찾으므로 전역 하나로 모든 프로젝트에서 쓴다. */
   const PW_PKG = 'playwright-chromium'
   const pwInstallCmd = `${NPM} install -g ${PW_PKG}`
   const globalPlaywright = async () => { const g = await npmGlobalRoot(); const d = g && path.join(g, PW_PKG); return d && fs.existsSync(path.join(d, 'package.json')) ? d : null }
-  let pwInstall = null   // 진행 중인 설치 Promise
+  let pwAsk = null   // 진행 중인 설치 안내 Promise (여러 파일을 내보내도 알림은 하나)
   const ensurePlaywright = async (root) => {
     if (findLocalPackage(root, PW_PKG) || await globalPlaywright()) return true
-    if (pwInstall) return pwInstall
-    pwInstall = (async () => {
-      vscode.window.showInformationMessage(`Build with Slidev: 내보내기에 필요한 Playwright 가 없어 터미널에서 전역으로 설치합니다 (${pwInstallCmd}, Chromium 포함 수백 MB). 처음 한 번입니다.`)
-      const r = await runInstallTerminal('Playwright', pwInstallCmd, globalPlaywright)
-      if (r === 'cancelled') return false
-      if (await globalPlaywright()) return true
-      vscode.window.showErrorMessage(`Build with Slidev: Playwright 설치가 끝났지만 전역 ${PW_PKG} 를 찾지 못했습니다. 터미널 출력을 확인하세요. 직접 설치하려면: ${pwInstallCmd} (권한 오류면 sudo)`)
-      return false
-    })().finally(() => { pwInstall = null })
-    return pwInstall
+    if (pwAsk) return pwAsk
+    pwAsk = (async () => {
+      for (;;) {
+        if (!(await askManualInstall('Build with Slidev', 'Playwright', pwInstallCmd, ' PDF·PPTX·PNG·Markdown 내보내기에 필요하며, Chromium 을 함께 받아 수백 MB, 수 분 걸릴 수 있습니다.'))) return false
+        if (await globalPlaywright()) return true
+      }
+    })().finally(() => { pwAsk = null })
+    return pwAsk
   }
   /** PDF 비밀번호(Teacher Mode)용 qpdf-wasm 을 도구 캐시에 준비하고 그 패키지 폴더를 돌려준다. 실패·취소하면 null (안내 표시).
    *  Slidev export 는 PDF 암호를 못 걸어서, 내보낸 PDF 를 qpdf 로 AES-256 암호화한다. 테마처럼 캐시에 한 번만 받아 모든 프로젝트에서 쓴다. */

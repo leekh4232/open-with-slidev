@@ -4,6 +4,11 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.8.10] - 2026-11-04
+
+### 변경
+- **PDF · PPTX · PNG · Markdown 내보내기에 필요한 Playwright도 자동으로 설치하지 않고, 터미널에서 직접 설치하라고 알립니다.** Slidev 설치 알림과 같은 방식입니다. 알림에는 설치 명령(`npm install -g playwright-chromium`)과 **터미널 열기** · **명령 복사** · **설치 확인** 버튼이 있고, 권한 오류가 나면 Windows는 관리자 권한 터미널, macOS · Linux는 `sudo`로 실행하라고 안내합니다.
+
 ## [0.8.9] - 2026-11-04
 
 ### 변경
