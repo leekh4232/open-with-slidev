@@ -256,10 +256,6 @@ function activate(context) {
   updateContext()
   context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateContext))
 
-  // Teacher Mode: 켜져 있으면 Build 하위 메뉴에 hossam/jussam build 를 보이는 컨텍스트 키 (package.json 의 when).
-  const updateTeacherMode = () => vscode.commands.executeCommand('setContext', 'openWithSlidev.teacherMode', cfg().get('teacherMode', false))
-  updateTeacherMode()
-
   // 확장 자동 업데이트(VS Code 설정 extensions.autoUpdate, 기본 켜짐)가 꺼져 있으면 처음 한 번만 켜기를 권한다.
   // 확장이 매니페스트로 정할 수 있는 값이 아니라 사용자가 버튼을 눌렀을 때만 설정을 바꾼다. 'onlyEnabledExtensions' 는 이 확장이 켜져 있으면 갱신되므로 그대로 둔다.
   const askedKey = 'autoUpdateAsked'
@@ -368,7 +364,7 @@ function activate(context) {
       vscode.window.showErrorMessage(`테마 설치 실패. 출력 창을 확인하세요. 터미널에서 직접: cd "${cacheDir}" && npm install --save ${todo.map(t => t.pkg).join(' ')}`)
     }
   }))
-  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('openWithSlidev')) { updateContext(); updateTeacherMode() } }))
+  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('openWithSlidev')) updateContext() }))
 
   /** 명령 팔레트에서 md 편집기 없이 실행했을 때: 워크스페이스의 md 파일(filePatterns 에 맞는 것) 중에서 고른다. 없거나 취소하면 null. */
   const pickMarkdown = async () => {
@@ -578,7 +574,7 @@ function activate(context) {
   const encrypter = path.join(context.extensionPath, 'encrypt.js')   // PDF 비밀번호 설정기
   const building = new Set()   // 빌드·내보내기 중인 "파일 경로|형식"
   /** 빌드·내보내기 함수의 공통 반환값: 결과 파일 경로(성공) · false(실패) · 'cancelled'(취소, 여러 파일 처리를 멈춘다) · undefined(건너뜀).
-   *  opts.batch 가 있으면("2/5") 여러 파일 중 하나로 돌고 있는 것: 알림 제목에 번호를 붙이고, 파일마다 뜨던 결과·실패 알림은 생략한다 (끝에 한 번 알린다). */
+   *  opts.quiet 면 성공 알림을 생략한다 (일괄 빌드가 끝에 한 번 알린다). opts.batch 가 있으면("2/5") 여러 파일 중 하나로 돌고 있는 것: 알림 제목에 번호를 붙이고, 파일마다 뜨던 결과·실패 알림은 생략한다 (끝에 한 번 알린다). */
   const tag = opts => opts.batch ? `(${opts.batch}) ` : ''
   const buildHtml = async (uri, opts = {}) => {
     const t = await prepare(uri)
@@ -603,7 +599,7 @@ function activate(context) {
       const result = await runWithProgress(`${tag(opts)}${path.basename(file)} 빌드 중`, `node "${builder}" ${token}`, root, l => { if (l.startsWith('SKIPPED ')) skipped.push(l.slice(8)) })
       if (result === 'cancelled') return 'cancelled'
       if (!result) { if (!opts.batch) vscode.window.showErrorMessage('Build with Slidev: 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.'); return false }
-      if (opts.batch) return outFile
+      if (opts.batch || opts.quiet) return outFile
       const note = skipped.length ? ` public 폴더 파일 ${skipped.length}개는 넣지 못했습니다(출력 창의 SKIPPED).` : ''
       const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(outFile)} 를 만들었습니다. 이 파일 하나만 있으면 더블클릭으로 열립니다.${note}`, '브라우저로 열기', '폴더에서 보기')
       if (pick === '브라우저로 열기') vscode.env.openExternal(vscode.Uri.file(outFile))
@@ -715,7 +711,7 @@ function activate(context) {
         if (encRes === 'cancelled') return 'cancelled'
         if (!encRes) { if (!opts.batch) vscode.window.showErrorMessage('Build with Slidev: PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.'); return false }
       }
-      if (opts.batch) return outPath
+      if (opts.batch || opts.quiet) return outPath
       const shown = fmt.dir ? `${path.basename(outPath)} 폴더` : format === 'md' ? `${path.basename(path.dirname(outPath))} 폴더(md 와 슬라이드 PNG)` : path.basename(outPath)
       const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${shown}${opts.password ? '(비밀번호 설정)' : ''} 를 만들었습니다.`, '열기', '폴더에서 보기')
       if (pick === '열기') {
@@ -726,62 +722,15 @@ function activate(context) {
     } finally { building.delete(key) }
   }
 
-  // Teacher Mode: 강사명 치환 빌드. hossam=이광호, jussam=주영아. from 의 문자열을 name 으로 바꾼 복사본으로 HTML 과 PDF 를 만들고 PDF 에 비밀번호를 건다.
-  // 원본 md 는 건드리지 않는다.
-  const TEACHER = {
-    hossam: { name: '이광호', from: ['주영아', '{teacher}'] },
-    jussam: { name: '주영아', from: ['이광호', '{teacher}'] },
-  }
-  /** 강사명 치환 복사본으로 HTML + 비밀번호 PDF 를 만든다 (<이름>.<variant>.html, <이름>.<variant>.pdf). 비밀번호는 opts.password. */
-  const teacherBuild = async (uri, variant, opts = {}) => {
-    const spec = TEACHER[variant]
-    const t = await prepare(uri)
-    if (!t) return
-    const { file, root } = t
-    const key = `${file}|teacher-${variant}`
-    if (building.has(key)) { vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(file)} 를 아직 ${variant} 로 빌드하는 중입니다.`); return }
-    const dir = path.dirname(file)
-    const base = path.basename(file).replace(/\.md$/i, '')
-    const tmpMd = path.join(dir, `.${base}.${variant}.owslidev.md`)   // 같은 폴더(상대 경로·테마 유지), 숨김. 끝나면 지운다
-    const htmlOut = path.join(dir, `${base}.${variant}.html`)
-    const pdfOut = path.join(dir, `${base}.${variant}.pdf`)
-    const relTmp = path.relative(root, tmpMd)
-    building.add(key)
-    try {
-      const pkg = await ensureSlidev(root)
-      if (!pkg) return 'cancelled'
-      // 강사명 치환 복사본 만들기 (split/join: 정규식 특수문자 걱정 없이 리터럴 치환)
-      let text
-      try { text = fs.readFileSync(file, 'utf8') } catch (e) { vscode.window.showErrorMessage(`Build with Slidev: ${path.basename(file)} 를 읽지 못했습니다: ${e.message}`); return false }
-      let replaced = text
-      for (const f of spec.from) replaced = replaced.split(f).join(spec.name)
-      fs.writeFileSync(tmpMd, replaced)
-      const { themeArg } = await themeFor(file, root)
-      out.appendLine(`[Build with Slidev] ${variant} (강사명 ${spec.name}): ${file} → ${htmlOut}, ${pdfOut}`)
-      // 1) HTML 한 파일
-      const htmlToken = Buffer.from(JSON.stringify({ entry: tmpMd, root, out: htmlOut, theme: themeArg, slidevPath: pkg }), 'utf8').toString('base64url')
-      const htmlRes = await runWithProgress(`${tag(opts)}${base} → ${variant} HTML 빌드 중`, `node "${builder}" ${htmlToken}`, root)
-      if (htmlRes === 'cancelled') return 'cancelled'
-      if (!htmlRes) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} HTML 빌드에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
-      // 2) PDF (slidev export) — Playwright 필요
-      if (!(await ensurePlaywright(root))) return 'cancelled'
-      const pdfCmd = `node "${slidevBin(pkg)}" export "${relTmp}" --format pdf --output "${pdfOut}"${themeArg ? ` --theme "${themeArg}"` : ''}`
-      out.appendLine(`$ ${pdfCmd}`)
-      const pdfRes = await runWithProgress(`${tag(opts)}${base} → ${variant} PDF 내보내는 중`, pdfCmd, root)
-      if (pdfRes === 'cancelled') { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return 'cancelled' }
-      if (!pdfRes) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
-      // 3) PDF 비밀번호 (qpdf-wasm, 별도 프로세스)
-      const encRes = await encryptPdf(pdfOut, opts.password, `${tag(opts)}${variant} PDF 비밀번호 설정 중`, root)
-      if (encRes === 'cancelled') return 'cancelled'
-      if (!encRes) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
-      if (opts.batch) return pdfOut
-      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${variant} — ${path.basename(htmlOut)} 와 ${path.basename(pdfOut)}(비밀번호 설정)를 만들었습니다.`, '폴더에서 보기')
-      if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(pdfOut))
-      return pdfOut
-    } finally {
-      try { fs.rmSync(tmpMd, { force: true }) } catch { /* 없으면 그만 */ }
-      building.delete(key)
-    }
+  /** HTML 한 파일과 PDF 를 차례로 만든다 (일괄 빌드). opts.password 가 있으면 PDF 를 그 비밀번호로 암호화한다. HTML 이 안 되면 PDF 는 하지 않는다. */
+  const buildBoth = async (uri, opts = {}) => {
+    const html = await buildHtml(uri, { ...opts, quiet: true })
+    if (typeof html !== 'string' || html === 'cancelled') return html
+    const pdf = await exportAs(uri, 'pdf', { ...opts, quiet: true })
+    if (typeof pdf !== 'string' || pdf === 'cancelled' || opts.batch) return pdf
+    const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${path.basename(html)} 와 ${path.basename(pdf)}${opts.password ? '(비밀번호 설정)' : ''} 를 만들었습니다.`, '폴더에서 보기')
+    if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(pdf))
+    return pdf
   }
 
   /** 탐색기에서 md 를 여러 개 선택해 실행하면 VS Code 가 두 번째 인자로 선택 목록(uris)을 준다. 둘 이상이면 차례로 하나씩 돌리고(동시에 돌리면 Vite·Chromium 이 메모리를 많이 쓴다)
@@ -814,7 +763,8 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.open', open))
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', forEachSelected(buildHtml)))
   for (const format of Object.keys(EXPORTS)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.export.${format}`, forEachSelected((uri, opts) => exportAs(uri, format, opts))))
-  for (const variant of Object.keys(TEACHER)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.teacher.${variant}`, withPassword((uri, opts) => teacherBuild(uri, variant, opts))))
+  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.buildAll', forEachSelected(buildBoth)))
+  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.buildAllPassword', withPassword(buildBoth)))
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.export.pdfPassword', withPassword((uri, opts) => exportAs(uri, 'pdf', opts))))
   context.subscriptions.push(vscode.window.onDidCloseTerminal(t => {
     for (const [k, v] of sessions) if (v.terminal === t) sessions.delete(k)

@@ -25,7 +25,7 @@
 - **HTML 파일 하나로 빌드**: md 옆에 같은 이름의 `.html` 하나를 만듭니다. 서버 없이 더블클릭으로 열리고, 메일이나 메신저로 그 파일만 보내면 됩니다. 탐색기에서 md를 여러 개 선택하면 차례로 모두 만듭니다.
 - **PDF · PPTX · PNG · Markdown으로 내보내기**: 같은 하위 메뉴에서 고릅니다. Playwright(Chromium)가 필요하며, 없으면 직접 설치할 명령을 알림으로 안내합니다.
 - **비밀번호가 걸린 PDF**: 하위 메뉴의 `PDF (.pdf, 비밀번호 설정)`을 고르면 비밀번호를 입력받아 PDF를 암호화합니다. 설정에 기본 비밀번호를 적어 두면 묻지 않고 그 값을 씁니다.
-- **Teacher Mode(선택)**: 켜면 하위 메뉴에 `hossam build`·`jussam build`가 더 보입니다. 강사명 자리를 선생님 이름으로 바꾼 복사본으로 HTML과 비밀번호가 걸린 PDF를 만듭니다(원본 md는 그대로).
+- **HTML과 PDF 일괄 빌드**: 메뉴 하나로 HTML 한 파일과 PDF를 함께 만듭니다. PDF에 비밀번호를 거는 메뉴도 따로 있습니다.
 - **터미널에서 실행**: 서버는 `Slidev: 파일명` 터미널에서 돌고, 같은 파일을 다시 열면 그 터미널을 보여 주고 슬라이드를 브라우저(또는 Simple Browser)에 다시 띄우거나(기본) 서버를 다시 띄웁니다.
 
 ## 준비물
@@ -73,6 +73,8 @@ Slidev는 이렇게 찾습니다.
 | PowerPoint | `slides.pptx`. 슬라이드마다 이미지 한 장(클릭 단계별로 나뉨), 발표자 노트 포함 |
 | PNG | `slides-png/` 폴더에 슬라이드별 PNG |
 | Markdown | `slides-md/slides.md`와 같은 폴더의 슬라이드별 PNG. 발표자 노트는 본문으로 들어감 |
+| HTML + PDF 일괄 빌드 | `slides.html`과 `slides.pdf` |
+| HTML + PDF(비밀번호 설정) 일괄 빌드 | `slides.html`과 암호화된 `slides.pdf` |
 
 #### HTML
 
@@ -92,22 +94,22 @@ Slidev는 이렇게 찾습니다.
 
 #### PDF 비밀번호
 
-**PDF (.pdf, 비밀번호 설정)** 메뉴와 Teacher Mode의 `hossam build`·`jussam build`는 PDF에 비밀번호를 겁니다.
+**PDF (.pdf, 비밀번호 설정)** 메뉴와 **HTML + PDF(비밀번호 설정) 일괄 빌드** 메뉴는 PDF에 비밀번호를 겁니다.
 
 - **비밀번호 정하기**: 설정 `openWithSlidev.pdfPassword`에 값이 있으면 그 값을 씁니다. 비어 있으면 실행할 때 입력 창이 떠서 비밀번호를 받습니다. 입력 창을 닫으면 아무것도 만들지 않습니다.
 - **여러 파일**: md를 여러 개 선택해 실행하면 비밀번호는 처음에 한 번만 정하고 선택한 파일 모두에 씁니다.
-- **일반 PDF 메뉴**: `PDF (.pdf)` 메뉴는 설정에 비밀번호가 있어도 암호화하지 않습니다.
+- **일반 PDF 메뉴**: `PDF (.pdf)`와 `HTML + PDF 일괄 빌드` 메뉴는 설정에 비밀번호가 있어도 암호화하지 않습니다.
 - **암호화 방식**: Slidev는 PDF에 비밀번호를 걸지 못해, 내보낸 PDF를 [qpdf](https://github.com/qpdf/qpdf)로 AES-256 암호화합니다. 처음 한 번 `@neslinesli93/qpdf-wasm`를 전역 저장소(`globalStorage/leekh.open-with-slidev/tools`)에 내려받습니다(시스템에 qpdf를 깔 필요 없음). 비밀번호를 거는 데 실패하면 암호화되지 않은 PDF를 남기지 않습니다.
 - 설정에 적은 비밀번호는 `settings.json`에 평문으로 저장됩니다.
 
-#### Teacher Mode (hossam · jussam build)
+#### 일괄 빌드
 
-설정 `openWithSlidev.teacherMode`를 켜면 **Build with Slidev** 하위 메뉴 끝에 구분선과 함께 `hossam build`·`jussam build`가 보입니다(편집기 본문 · 편집기 탭 · 탐색기 메뉴 모두). 강의 덱 하나로 선생님별 배포본을 만들 때 씁니다.
+하위 메뉴 끝의 **HTML + PDF 일괄 빌드**와 **HTML + PDF(비밀번호 설정) 일괄 빌드**는 HTML 한 파일과 PDF를 차례로 만듭니다.
 
-- **강사명 치환**: `hossam build`는 `{teacher}`와 `주영아`를 **이광호**로, `jussam build`는 `{teacher}`와 `이광호`를 **주영아**로 바꿉니다. 덱에서 강사 이름이 들어갈 자리에 `{teacher}`를 적어 두면 두 배포본을 한 소스로 관리할 수 있습니다.
-- **원본은 그대로**: 치환은 같은 폴더에 만든 임시 복사본에서만 일어나고, 빌드가 끝나면 지웁니다. 원본 md와 `{teacher}` 자리는 건드리지 않습니다.
-- **결과**(`slides.md` 기준): `slides.hossam.html`·`slides.hossam.pdf`(jussam은 `slides.jussam.*`). 선생님별로 이름이 달라 서로 덮지 않습니다. HTML은 위 [HTML](#html)과 같은 한 파일이고, 테마는 **Open with Slidev**와 같은 규칙으로 정합니다.
-- **PDF 비밀번호**: 위 [PDF 비밀번호](#pdf-비밀번호)와 같은 방식으로 정합니다(설정값이 있으면 그 값, 없으면 입력 창).
+- **결과**: 위 [HTML](#html) · PDF 메뉴를 따로 실행한 것과 같은 `slides.html`과 `slides.pdf`입니다. 같은 이름 파일은 덮어씁니다.
+- **순서**: HTML을 먼저 만들고 PDF를 만듭니다. HTML 빌드가 실패하거나 취소되면 PDF는 만들지 않습니다.
+- **비밀번호**: 비밀번호 설정 메뉴는 위 [PDF 비밀번호](#pdf-비밀번호)와 같은 방식으로 비밀번호를 정해 PDF만 암호화합니다. HTML에는 비밀번호가 걸리지 않습니다.
+- 끝나면 알림이 한 번 뜨고 **폴더에서 보기** 버튼이 나옵니다.
 
 ## 내장 테마
 
@@ -157,8 +159,7 @@ sidebar: true      # 생략하면 켬
 | `openWithSlidev.openPresenter` | `false` | 발표자 모드(`/presenter`)도 외부 브라우저로 함께 엽니다. |
 | `openWithSlidev.filePatterns` | `["**/*.md"]` | 편집기 우클릭 메뉴를 보일 파일(glob, 워크스페이스 기준). 폴더 없이 쓰면 파일 이름만 비교합니다. 탐색기 메뉴는 `.md` 전체에 보이고 실행 시 검사합니다. |
 | `openWithSlidev.stopOnClose` | `false` | md 편집기를 닫으면 그 파일의 서버(터미널)도 끕니다. |
-| `openWithSlidev.teacherMode` | `false` | 켜면 **Build with Slidev** 하위 메뉴 끝에 구분선과 함께 `hossam build`·`jussam build`가 보입니다. 아래 [Teacher Mode](#teacher-mode-hossam--jussam-build) 참고. |
-| `openWithSlidev.pdfPassword` | (없음) | `PDF (.pdf, 비밀번호 설정)`과 Teacher Mode 빌드가 PDF에 거는 기본 비밀번호. 비우면 실행할 때마다 입력 창으로 받습니다. 일반 `PDF (.pdf)` 메뉴에는 적용하지 않습니다. 설정에 평문으로 저장됩니다. |
+| `openWithSlidev.pdfPassword` | (없음) | `PDF (.pdf, 비밀번호 설정)`과 `HTML + PDF(비밀번호 설정) 일괄 빌드`가 PDF에 거는 기본 비밀번호. 비우면 실행할 때마다 입력 창으로 받습니다. 비밀번호 설정이 붙지 않은 메뉴에는 적용하지 않습니다. 설정에 평문으로 저장됩니다. |
 
 설정 예시:
 

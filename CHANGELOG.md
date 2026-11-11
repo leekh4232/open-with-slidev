@@ -4,6 +4,14 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.10.0] - 2026-11-11
+
+### 추가
+- **Build with Slidev 하위 메뉴 끝에 `HTML + PDF 일괄 빌드`와 `HTML + PDF(비밀번호 설정) 일괄 빌드`가 생겼습니다.** 메뉴 하나로 `slides.html`과 `slides.pdf`를 차례로 만듭니다. 비밀번호 설정 메뉴는 설정 `openWithSlidev.pdfPassword`의 값(비어 있으면 입력 창으로 받은 값)으로 PDF만 암호화합니다. HTML 빌드가 실패하거나 취소되면 PDF는 만들지 않습니다. md를 여러 개 선택하면 차례로 모두 처리합니다.
+
+### 제거
+- **Teacher Mode를 없앴습니다.** 설정 `openWithSlidev.teacherMode`와 하위 메뉴의 `hossam build`·`jussam build`(강사명 치환 빌드, `slides.hossam.*`·`slides.jussam.*`)가 없어졌습니다. HTML과 비밀번호 PDF를 함께 만들려면 `HTML + PDF(비밀번호 설정) 일괄 빌드`를 씁니다. `settings.json`에 남은 `openWithSlidev.teacherMode`는 지워도 됩니다.
+
 ## [0.9.0] - 2026-11-11
 
 ### 추가
