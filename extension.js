@@ -558,13 +558,13 @@ function activate(context) {
   }
 
   /** 자식 프로세스로 command 를 돌린다. 출력은 출력 창에, 경과 시간은 알림에 보여 주고 취소할 수 있다 (터미널과 달리 끝난 것을 안다).
-   *  onLine(줄) 로 출력 줄을 받는다. 돌려주는 값: true(성공) · false(실패) · 'cancelled' */
-  const runWithProgress = (label, command, cwd, onLine) => vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Build with Slidev', cancellable: true }, (progress, ctoken) => new Promise(resolve => {
+   *  onLine(줄) 로 출력 줄을 받는다. env 는 자식 프로세스에 더할 환경 변수. 돌려주는 값: true(성공) · false(실패) · 'cancelled' */
+  const runWithProgress = (label, command, cwd, onLine, env) => vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Build with Slidev', cancellable: true }, (progress, ctoken) => new Promise(resolve => {
     const t0 = Date.now()
     const tick = () => progress.report({ message: `${label} · ${Math.round((Date.now() - t0) / 1000)}초` })
     tick(); const timer = setInterval(tick, 1000)
     // shell: 윈도우에서도 PATH 의 node·npx 를 찾기 위해. detached(POSIX): 취소할 때 프로세스 그룹째 끝내기 위해
-    const child = spawn(command, { cwd, shell: true, detached: process.platform !== 'win32', windowsHide: true, env: { ...process.env, NO_COLOR: '1' } })
+    const child = spawn(command, { cwd, shell: true, detached: process.platform !== 'win32', windowsHide: true, env: { ...process.env, NO_COLOR: '1', ...env } })
     const take = chunk => { for (const l of chunk.toString().replace(/\x1b\[[0-9;]*m/g, '').split(/[\r\n]+/)) if (l.trim()) { out.appendLine(l); onLine?.(l) } }
     child.stdout.on('data', take); child.stderr.on('data', take)
     const sub = ctoken.onCancellationRequested(() => killTree(child))
@@ -575,7 +575,7 @@ function activate(context) {
 
   /** md 옆에 같은 이름의 .html 한 파일로 빌드한다 (build.js: JS·CSS·이미지를 모두 넣고 해시 라우팅이라 더블클릭으로 열린다). */
   const builder = path.join(context.extensionPath, 'build.js')
-  const encrypter = path.join(context.extensionPath, 'encrypt.js')   // PDF 비밀번호 설정기 (Teacher Mode)
+  const encrypter = path.join(context.extensionPath, 'encrypt.js')   // PDF 비밀번호 설정기
   const building = new Set()   // 빌드·내보내기 중인 "파일 경로|형식"
   /** 빌드·내보내기 함수의 공통 반환값: 결과 파일 경로(성공) · false(실패) · 'cancelled'(취소, 여러 파일 처리를 멈춘다) · undefined(건너뜀).
    *  opts.batch 가 있으면("2/5") 여러 파일 중 하나로 돌고 있는 것: 알림 제목에 번호를 붙이고, 파일마다 뜨던 결과·실패 알림은 생략한다 (끝에 한 번 알린다). */
@@ -629,7 +629,7 @@ function activate(context) {
     })().finally(() => { pwAsk = null })
     return pwAsk
   }
-  /** PDF 비밀번호(Teacher Mode)용 qpdf-wasm 을 도구 캐시에 준비하고 그 패키지 폴더를 돌려준다. 실패·취소하면 null (안내 표시).
+  /** PDF 비밀번호용 qpdf-wasm 을 도구 캐시에 준비하고 그 패키지 폴더를 돌려준다. 실패·취소하면 null (안내 표시).
    *  Slidev export 는 PDF 암호를 못 걸어서, 내보낸 PDF 를 qpdf 로 AES-256 암호화한다. 테마처럼 캐시에 한 번만 받아 모든 프로젝트에서 쓴다. */
   const QPDF_PKG = '@neslinesli93/qpdf-wasm'
   const qpdfPkgDir = () => { const p = path.join(toolsDir, 'node_modules', QPDF_PKG); return fs.existsSync(path.join(p, 'dist', 'qpdf.js')) ? p : null }
@@ -653,6 +653,29 @@ function activate(context) {
     }
     return qpdfPkgDir()
   }
+  /** PDF 에 걸 비밀번호. 설정 pdfPassword 가 있으면 그 값을 쓰고, 비어 있으면 입력 창으로 받는다. 입력 창을 닫으면 undefined. */
+  const resolvePassword = async () => {
+    const configured = cfg().get('pdfPassword', '')
+    if (configured) return configured
+    return vscode.window.showInputBox({
+      title: 'PDF 비밀번호',
+      prompt: '기본 비밀번호(openWithSlidev.pdfPassword)가 설정돼 있지 않습니다. 이 PDF 에 걸 비밀번호를 입력하세요.',
+      password: true,
+      ignoreFocusOut: true,
+      validateInput: v => (v ? undefined : '비밀번호를 입력하세요'),
+    })
+  }
+  /** pdf 파일을 그 자리에서 password 로 암호화한다 (qpdf-wasm, 별도 프로세스). true · false · 'cancelled'. 성공하지 못하면 암호 안 걸린 PDF 를 남기지 않고 지운다.
+   *  비밀번호는 프로세스 목록에 보이지 않게 명령 인자가 아니라 환경 변수로 넘긴다. */
+  const encryptPdf = async (pdf, password, label, root) => {
+    const drop = () => { try { fs.rmSync(pdf, { force: true }) } catch { /* 없으면 그만 */ } }
+    const pkgDir = await ensureQpdf()
+    if (!pkgDir) { drop(); return 'cancelled' }
+    const token = Buffer.from(JSON.stringify({ pkgDir, input: pdf, output: pdf }), 'utf8').toString('base64url')
+    const res = await runWithProgress(label, `node "${encrypter}" ${token}`, root, undefined, { OWS_PDF_PASSWORD: password })
+    if (res !== true) drop()
+    return res
+  }
   /** 내보내기 형식. out(md 경로) → 결과 경로. png 는 폴더(Slidev 가 비우고 다시 만든다), md 는 PNG 를 md 와 같은 폴더에 쓰므로 원본을 덮지 않게 하위 폴더로 보낸다. */
   const EXPORTS = {
     pdf: { name: 'PDF', out: f => f.replace(/\.md$/i, '.pdf') },
@@ -660,7 +683,7 @@ function activate(context) {
     png: { name: 'PNG', out: f => f.replace(/\.md$/i, '-png'), dir: true },
     md: { name: 'Markdown', out: f => path.join(f.replace(/\.md$/i, '-md'), path.basename(f)) },
   }
-  /** slidev export 로 md 옆에 내보낸다. */
+  /** slidev export 로 md 옆에 내보낸다. opts.password 가 있으면(PDF) 내보낸 PDF 를 그 비밀번호로 암호화한다. */
   const exportAs = async (uri, format, opts = {}) => {
     const fmt = EXPORTS[format]
     const t = await prepare(uri)
@@ -687,9 +710,14 @@ function activate(context) {
       const result = await runWithProgress(`${tag(opts)}${path.basename(file)} → ${fmt.name} 내보내는 중`, command, root)
       if (result === 'cancelled') return 'cancelled'
       if (!result) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${fmt.name} 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
+      if (opts.password) {
+        const encRes = await encryptPdf(outPath, opts.password, `${tag(opts)}${path.basename(outPath)} 비밀번호 설정 중`, root)
+        if (encRes === 'cancelled') return 'cancelled'
+        if (!encRes) { if (!opts.batch) vscode.window.showErrorMessage('Build with Slidev: PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.'); return false }
+      }
       if (opts.batch) return outPath
       const shown = fmt.dir ? `${path.basename(outPath)} 폴더` : format === 'md' ? `${path.basename(path.dirname(outPath))} 폴더(md 와 슬라이드 PNG)` : path.basename(outPath)
-      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${shown} 를 만들었습니다.`, '열기', '폴더에서 보기')
+      const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${shown}${opts.password ? '(비밀번호 설정)' : ''} 를 만들었습니다.`, '열기', '폴더에서 보기')
       if (pick === '열기') {
         if (format === 'md') vscode.window.showTextDocument(vscode.Uri.file(outPath))
         else vscode.env.openExternal(vscode.Uri.file(outPath))
@@ -698,13 +726,13 @@ function activate(context) {
     } finally { building.delete(key) }
   }
 
-  // Teacher Mode: 강사명 치환 빌드. hossam=이광호, jussam=주영아. from 의 문자열을 name 으로 바꾼 복사본으로 HTML 과 PDF 를 만들고 PDF 에 password 를 건다.
-  // 원본 md 는 건드리지 않는다. 비밀번호는 소스에 박혀 있어(공개 저장소) 아무나 바로 못 여는 수준의 보호다.
+  // Teacher Mode: 강사명 치환 빌드. hossam=이광호, jussam=주영아. from 의 문자열을 name 으로 바꾼 복사본으로 HTML 과 PDF 를 만들고 PDF 에 비밀번호를 건다.
+  // 원본 md 는 건드리지 않는다.
   const TEACHER = {
-    hossam: { name: '이광호', from: ['주영아', '{teacher}'], password: 'it123!@#' },
-    jussam: { name: '주영아', from: ['이광호', '{teacher}'], password: 'ju123!@#' },
+    hossam: { name: '이광호', from: ['주영아', '{teacher}'] },
+    jussam: { name: '주영아', from: ['이광호', '{teacher}'] },
   }
-  /** 강사명 치환 복사본으로 HTML + 비밀번호 PDF 를 만든다 (<이름>.<variant>.html, <이름>.<variant>.pdf). */
+  /** 강사명 치환 복사본으로 HTML + 비밀번호 PDF 를 만든다 (<이름>.<variant>.html, <이름>.<variant>.pdf). 비밀번호는 opts.password. */
   const teacherBuild = async (uri, variant, opts = {}) => {
     const spec = TEACHER[variant]
     const t = await prepare(uri)
@@ -743,15 +771,9 @@ function activate(context) {
       if (pdfRes === 'cancelled') { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return 'cancelled' }
       if (!pdfRes) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 내보내기에 실패했습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
       // 3) PDF 비밀번호 (qpdf-wasm, 별도 프로세스)
-      const pkgDir = await ensureQpdf()
-      if (!pkgDir) { try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ } return 'cancelled' }
-      const encToken = Buffer.from(JSON.stringify({ pkgDir, input: pdfOut, output: pdfOut, password: spec.password }), 'utf8').toString('base64url')
-      const encRes = await runWithProgress(`${tag(opts)}${variant} PDF 비밀번호 설정 중`, `node "${encrypter}" ${encToken}`, root)
-      if (encRes === 'cancelled' || !encRes) {
-        try { fs.rmSync(pdfOut, { force: true }) } catch { /* 없으면 그만 */ }   // 암호 안 걸린 PDF 를 남기지 않는다
-        if (!encRes && !opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.`)
-        return encRes === 'cancelled' ? 'cancelled' : false
-      }
+      const encRes = await encryptPdf(pdfOut, opts.password, `${tag(opts)}${variant} PDF 비밀번호 설정 중`, root)
+      if (encRes === 'cancelled') return 'cancelled'
+      if (!encRes) { if (!opts.batch) vscode.window.showErrorMessage(`Build with Slidev: ${variant} PDF 비밀번호 설정에 실패해 암호화되지 않은 PDF 를 지웠습니다. 출력 창 Open with Slidev 를 확인하세요.`); return false }
       if (opts.batch) return pdfOut
       const pick = await vscode.window.showInformationMessage(`Build with Slidev: ${variant} — ${path.basename(htmlOut)} 와 ${path.basename(pdfOut)}(비밀번호 설정)를 만들었습니다.`, '폴더에서 보기')
       if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(pdfOut))
@@ -783,10 +805,17 @@ function activate(context) {
     const pick = await show(msg, ...(done.length ? ['폴더에서 보기'] : []))
     if (pick === '폴더에서 보기') vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(done[0].r))
   }
+  /** 비밀번호가 필요한 명령: 시작할 때 비밀번호를 한 번 정해(설정값 또는 입력 창) 선택한 파일 모두에 쓴다. 입력 창을 닫으면 아무것도 하지 않는다. */
+  const withPassword = fn => async (uri, uris) => {
+    const password = await resolvePassword()
+    if (password === undefined) return
+    return forEachSelected((u, opts) => fn(u, { ...opts, password }))(uri, uris)
+  }
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.open', open))
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', forEachSelected(buildHtml)))
   for (const format of Object.keys(EXPORTS)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.export.${format}`, forEachSelected((uri, opts) => exportAs(uri, format, opts))))
-  for (const variant of Object.keys(TEACHER)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.teacher.${variant}`, forEachSelected((uri, opts) => teacherBuild(uri, variant, opts))))
+  for (const variant of Object.keys(TEACHER)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.teacher.${variant}`, withPassword((uri, opts) => teacherBuild(uri, variant, opts))))
+  context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.export.pdfPassword', withPassword((uri, opts) => exportAs(uri, 'pdf', opts))))
   context.subscriptions.push(vscode.window.onDidCloseTerminal(t => {
     for (const [k, v] of sessions) if (v.terminal === t) sessions.delete(k)
   }))

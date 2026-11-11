@@ -35,6 +35,11 @@
         "category": "Build with Slidev"
       },
       {
+        "command": "openWithSlidev.export.pdfPassword",
+        "title": "PDF (.pdf, 비밀번호 설정)",
+        "category": "Build with Slidev"
+      },
+      {
         "command": "openWithSlidev.export.pptx",
         "title": "PowerPoint (.pptx)",
         "category": "Build with Slidev"
@@ -118,16 +123,20 @@
           "group": "2_export@1"
         },
         {
-          "command": "openWithSlidev.export.pptx",
+          "command": "openWithSlidev.export.pdfPassword",
           "group": "2_export@2"
         },
         {
-          "command": "openWithSlidev.export.png",
+          "command": "openWithSlidev.export.pptx",
           "group": "2_export@3"
         },
         {
-          "command": "openWithSlidev.export.md",
+          "command": "openWithSlidev.export.png",
           "group": "2_export@4"
+        },
+        {
+          "command": "openWithSlidev.export.md",
+          "group": "2_export@5"
         },
         {
           "command": "openWithSlidev.teacher.hossam",
@@ -301,7 +310,12 @@
         "openWithSlidev.teacherMode": {
           "type": "boolean",
           "default": false,
-          "description": "켜면 Build with Slidev 하위 메뉴 끝에 구분선과 함께 'hossam build'·'jussam build'가 보인다. 둘 다 md 의 강사명 자리('{teacher}' 또는 상대 강사 이름)를 해당 강사 이름으로 바꿔 복사본으로 빌드하고(원본은 그대로), HTML 한 파일과 비밀번호가 걸린 PDF 를 slides.hossam.html·slides.hossam.pdf 처럼 만든다. PDF 비밀번호는 qpdf 로 거는데, 처음 한 번 qpdf-wasm 을 캐시에 내려받는다"
+          "description": "켜면 Build with Slidev 하위 메뉴 끝에 구분선과 함께 'hossam build'·'jussam build'가 보인다. 둘 다 md 의 강사명 자리('{teacher}' 또는 상대 강사 이름)를 해당 강사 이름으로 바꿔 복사본으로 빌드하고(원본은 그대로), HTML 한 파일과 비밀번호가 걸린 PDF 를 slides.hossam.html·slides.hossam.pdf 처럼 만든다. PDF 비밀번호는 pdfPassword 설정값을 쓰고, 비어 있으면 실행할 때 입력받는다"
+        },
+        "openWithSlidev.pdfPassword": {
+          "type": "string",
+          "default": "",
+          "description": "Build with Slidev 의 'PDF (.pdf, 비밀번호 설정)'과 Teacher Mode 의 hossam·jussam build 가 PDF 에 거는 기본 비밀번호. 비우면 실행할 때마다 입력 창으로 받는다. 일반 'PDF (.pdf)' 메뉴에는 적용하지 않는다. 설정에 평문으로 저장되며, PDF 는 qpdf 로 AES-256 암호화한다 (처음 한 번 qpdf-wasm 을 캐시에 내려받는다)"
         }
       }
     }

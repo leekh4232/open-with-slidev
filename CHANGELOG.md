@@ -4,6 +4,15 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [0.9.0] - 2026-11-11
+
+### 추가
+- **Build with Slidev 하위 메뉴에 `PDF (.pdf, 비밀번호 설정)`이 생겼습니다.** 일반 PDF와 같은 `slides.pdf`를 만들되, 열 때 비밀번호를 물어보도록 AES-256으로 암호화합니다. md를 여러 개 선택하면 비밀번호는 한 번만 정해 모두에 씁니다.
+- **설정 `openWithSlidev.pdfPassword`(기본 빈 값).** 값이 있으면 비밀번호 PDF를 만들 때 묻지 않고 그 값을 씁니다. 비어 있으면 실행할 때마다 입력 창으로 받습니다. 일반 `PDF (.pdf)` 메뉴에는 적용하지 않습니다. 설정에 평문으로 저장됩니다.
+
+### 변경
+- **Teacher Mode의 `hossam build`·`jussam build`가 PDF 비밀번호를 고정값으로 쓰지 않습니다.** 설정 `openWithSlidev.pdfPassword`에 값이 있으면 그 값을, 없으면 실행할 때 입력 창으로 받은 값을 씁니다. 입력 창을 닫으면 빌드하지 않습니다.
+
 ## [0.8.10] - 2026-11-04
 
 ### 변경
