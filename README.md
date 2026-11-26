@@ -111,6 +111,23 @@ Slidev는 이렇게 찾습니다.
 - **비밀번호**: 비밀번호 설정 메뉴는 위 [PDF 비밀번호](#pdf-비밀번호)와 같은 방식으로 비밀번호를 정해 PDF만 암호화합니다. HTML에는 비밀번호가 걸리지 않습니다.
 - 끝나면 알림이 한 번 뜨고 **폴더에서 보기** 버튼이 나옵니다.
 
+#### 링크로 빌드
+
+스크립트나 AI 에이전트처럼 VS Code 밖에서 빌드를 시작할 때는 링크를 엽니다. VS Code 창이 열려 있어야 합니다.
+
+```sh
+open "vscode://leekh.open-with-slidev/build?file=/절대/경로/slides.md&password=1234"           # macOS
+start "" "vscode://leekh.open-with-slidev/build?file=C:/절대/경로/slides.md&password=1234"      # Windows
+```
+
+| 쿼리 | 하는 일 |
+|:--|:--|
+| `file` | 빌드할 md의 절대 경로. 여러 번 쓰면 차례로 빌드. 경로의 한글 · 공백은 URL 인코딩 |
+| `format` | `html` · `pdf` · `all`. 기본값 `all`(일괄 빌드와 같음) |
+| `password` | `password=<비밀번호>`는 PDF를 그 비밀번호로 암호화. 값 없이 `password`만 쓰면 [PDF 비밀번호](#pdf-비밀번호)와 같이 정함. 특수문자는 URL 인코딩 |
+
+외부 웹 페이지도 이 링크를 열 수 있으므로, VS Code에 열린 작업 폴더 안의 `.md`만 빌드하고 그 밖의 경로는 오류 알림을 띄웁니다.
+
 ## 내장 테마
 
 아래 이름을 md 프런트매터에 쓰거나(`theme: terminal`), 설정 `openWithSlidev.defaultTheme` 드롭다운에서 고르면 됩니다. 프로젝트에 해당 패키지가 이미 설치돼 있으면 그것을 쓰고, 없으면 처음 한 번 내려받아 캐시에 둔 뒤 `--theme` 절대 경로로 넘깁니다.

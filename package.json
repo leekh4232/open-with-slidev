@@ -328,6 +328,7 @@
     "publish": "vsce publish --no-dependencies"
   },
   "activationEvents": [
-    "onLanguage:markdown"
+    "onLanguage:markdown",
+    "onUri"
   ]
 }

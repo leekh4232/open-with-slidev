@@ -760,6 +760,34 @@ function activate(context) {
     if (password === undefined) return
     return forEachSelected((u, opts) => fn(u, { ...opts, password }))(uri, uris)
   }
+  /** vscode://leekh.open-with-slidev/build?file=<절대 경로>[&file=…][&format=html|pdf|all][&password[=…]]
+   *  스크립트·AI 에이전트가 VS Code 밖에서 빌드를 맡길 때 쓴다. format 기본값은 all(HTML + PDF). password=<값>은 그 비밀번호로,
+   *  값 없는 password 는 (비밀번호 설정) 명령처럼 pdfPassword 설정 또는 입력 창으로 PDF 를 암호화한다.
+   *  외부 웹 페이지도 이 링크를 열 수 있으므로 VS Code 에 열린 작업 폴더 안의 .md 만 받는다. 여러 파일은 차례로 빌드한다. */
+  const LINK_BUILDS = { html: buildHtml, pdf: (u, o) => exportAs(u, 'pdf', o), all: buildBoth }
+  context.subscriptions.push(vscode.window.registerUriHandler({
+    handleUri: async uri => {
+      if (uri.path !== '/build') { vscode.window.showErrorMessage(`Build with Slidev: 알 수 없는 링크입니다 (${uri.path}).`); return }
+      const q = new URLSearchParams(uri.query)
+      const format = q.get('format') || 'all'
+      const fn = LINK_BUILDS[format]
+      if (!fn) { vscode.window.showErrorMessage(`Build with Slidev: format 은 html · pdf · all 가운데 하나입니다 (${format}).`); return }
+      const roots = (vscode.workspace.workspaceFolders || []).map(f => f.uri.fsPath)
+      const inWorkspace = p => roots.some(r => { const rel = path.relative(r, p); return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel) })
+      const files = q.getAll('file').map(p => path.resolve(p))
+      const rejected = files.filter(p => !/\.md$/i.test(p) || !inWorkspace(p) || !fs.existsSync(p))
+      if (!files.length || rejected.length) {
+        vscode.window.showErrorMessage(files.length ? `Build with Slidev: 열린 작업 폴더 안의 .md 파일이 아닙니다: ${rejected.join(', ')}` : 'Build with Slidev: 링크에 file 이 없습니다.')
+        return
+      }
+      const pw = q.get('password')
+      const password = pw === null ? undefined : (pw || await resolvePassword())
+      if (pw !== null && password === undefined) return   // 입력 창을 닫음
+      const run = (u, opts) => fn(u, password && format !== 'html' ? { ...opts, password } : opts)
+      const uris = files.map(f => vscode.Uri.file(f))
+      return forEachSelected(run)(uris[0], uris)
+    },
+  }))
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.open', open))
   context.subscriptions.push(vscode.commands.registerCommand('openWithSlidev.build', forEachSelected(buildHtml)))
   for (const format of Object.keys(EXPORTS)) context.subscriptions.push(vscode.commands.registerCommand(`openWithSlidev.export.${format}`, forEachSelected((uri, opts) => exportAs(uri, format, opts))))

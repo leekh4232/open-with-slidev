@@ -4,6 +4,11 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를, 버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다.
 
+## [미배포]
+
+### 추가
+- **링크로 빌드를 시작할 수 있습니다.** `vscode://leekh.open-with-slidev/build?file=<md 절대 경로>`를 열면(터미널에서 macOS `open`, Windows `start`) 그 md를 빌드합니다. `&format=html` · `pdf` · `all`(기본값, HTML + PDF 일괄 빌드)로 형식을 고르고, `&password=<비밀번호>`를 붙이면 PDF를 그 비밀번호로 암호화합니다. 값 없이 `&password`만 붙이면 비밀번호 설정 메뉴처럼 `openWithSlidev.pdfPassword`(비어 있으면 입력 창)를 씁니다. `file`을 여러 번 쓰면 차례로 빌드합니다. 스크립트나 AI 에이전트가 VS Code 밖에서 빌드를 맡길 때 씁니다. 외부 웹 페이지도 이 링크를 열 수 있으므로, VS Code에 열린 작업 폴더 안의 `.md`만 빌드합니다.
+
 ## [0.10.0] - 2026-11-11
 
 ### 추가
